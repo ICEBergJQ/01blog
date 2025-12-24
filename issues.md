@@ -1,0 +1,4 @@
+- when referching it redirects you to the login page even if you logged in also when you click the notifiction button.
+- when logged out you cant login in again "invalid credentials".
+- delete post functionality for admin users doesnt work.
+- when fetching roperted users it returns N/A.
