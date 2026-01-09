@@ -20,9 +20,20 @@ public class AdminController {
         return ResponseEntity.ok(adminService.getAllReports());
     }
 
+    @GetMapping("/users")
+    public ResponseEntity<List<com.example.blog.dto.UserResponse>> getAllUsers() {
+        return ResponseEntity.ok(adminService.getAllUsers());
+    }
+
     @PostMapping("/users/{userId}/ban")
     public ResponseEntity<Void> banUser(@PathVariable Long userId) {
         adminService.banUser(userId);
+        return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/users/{userId}/unban")
+    public ResponseEntity<Void> unbanUser(@PathVariable Long userId) {
+        adminService.unbanUser(userId);
         return ResponseEntity.ok().build();
     }
 

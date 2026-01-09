@@ -47,7 +47,13 @@ export class LoginComponent {
     this.authService.login(this.credentials).subscribe({
       next: () => this.router.navigate(['/']),
       error: (err) => {
-        this.error = 'Invalid credentials';
+        if (err.status === 403 && err.error && err.error.message === "User is disabled") {
+             this.error = "Your account has been banned.";
+        } else if (err.status === 401) {
+             this.error = "Invalid credentials";
+        } else {
+             this.error = "Login failed. " + (err.error?.message || "");
+        }
         console.error(err);
       }
     });

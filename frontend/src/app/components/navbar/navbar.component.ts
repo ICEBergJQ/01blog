@@ -1,13 +1,16 @@
 import { Component, OnInit, Inject, PLATFORM_ID } from '@angular/core';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { Router, RouterModule } from '@angular/router';
+import { FormsModule } from '@angular/forms';
 import { AuthService } from '../../services/auth.service';
 import { NotificationService, Notification } from '../../services/notification.service';
+import { UserService } from '../../services/user.service';
+import { User } from '../../models/user.model';
 
 @Component({
   selector: 'app-navbar',
   standalone: true,
-  imports: [CommonModule, RouterModule],
+  imports: [CommonModule, RouterModule, FormsModule],
   template: `
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark mb-4">
       <div class="container">
@@ -16,6 +19,20 @@ import { NotificationService, Notification } from '../../services/notification.s
           <span class="navbar-toggler-icon"></span>
         </button>
         <div class="collapse navbar-collapse" id="navbarNav">
+          <ul class="navbar-nav me-auto mb-2 mb-lg-0" *ngIf="isBrowser && userId">
+             <li class="nav-item">
+                <form class="d-flex position-relative" (submit)="search()">
+                    <input class="form-control form-control-sm me-2" type="search" placeholder="Search users..." aria-label="Search" [(ngModel)]="searchQuery" name="searchQuery" (input)="onSearchInput()" autocomplete="off">
+                    
+                    <div class="dropdown-menu show" *ngIf="searchResults.length > 0" style="position: absolute; top: 100%; left: 0; width: 100%;">
+                        <button class="dropdown-item" *ngFor="let user of searchResults" (click)="goToUserProfile(user.id)">
+                            {{ user.username }}
+                        </button>
+                    </div>
+                </form>
+             </li>
+          </ul>
+
           <ul class="navbar-nav ms-auto">
             <ng-container *ngIf="isBrowser && (authService.currentUser$ | async); else guestLinks">
               <li class="nav-item">
@@ -65,11 +82,15 @@ export class NavbarComponent implements OnInit {
   unreadCount = 0;
   notifications: Notification[] = [];
   isBrowser = false;
+  
+  searchQuery = '';
+  searchResults: User[] = [];
 
   constructor(
       public authService: AuthService, 
       private router: Router,
       private notificationService: NotificationService,
+      private userService: UserService,
       @Inject(PLATFORM_ID) private platformId: Object
   ) {
       this.isBrowser = isPlatformBrowser(this.platformId);
@@ -104,7 +125,6 @@ export class NavbarComponent implements OnInit {
 
   loadNotifications() {
       this.notificationService.getNotifications().subscribe(notifs => this.notifications = notifs);
-      // Optional: Mark all as read when opening? No, let user mark them.
   }
 
   markRead(event: Event, id: number) {
@@ -116,7 +136,6 @@ export class NavbarComponent implements OnInit {
       });
   }
 
-
   logout() {
     this.authService.logout();
   }
@@ -126,5 +145,25 @@ export class NavbarComponent implements OnInit {
     if (this.userId) {
       this.router.navigate(['/profile', this.userId]);
     }
+  }
+
+  onSearchInput() {
+      if (this.searchQuery.length < 2) {
+          this.searchResults = [];
+          return;
+      }
+      this.userService.searchUsers(this.searchQuery).subscribe(users => {
+          this.searchResults = users;
+      });
+  }
+
+  search() {
+      // Optional: Navigate to a dedicated search page
+  }
+
+  goToUserProfile(userId: number) {
+      this.searchResults = [];
+      this.searchQuery = '';
+      this.router.navigate(['/profile', userId]);
   }
 }

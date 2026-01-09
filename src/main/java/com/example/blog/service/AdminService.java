@@ -25,6 +25,25 @@ public class AdminService {
         userRepository.save(user);
     }
 
+    public void unbanUser(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        user.setEnabled(true);
+        userRepository.save(user);
+    }
+
+    public List<com.example.blog.dto.UserResponse> getAllUsers() {
+        return userRepository.findAll().stream()
+                .map(user -> com.example.blog.dto.UserResponse.builder()
+                        .id(user.getId())
+                        .username(user.getUsername())
+                        .email(user.getEmail())
+                        .role(user.getRole())
+                        .enabled(user.isEnabled())
+                        .build())
+                .collect(Collectors.toList());
+    }
+
     public List<ReportResponse> getAllReports() {
         return reportRepository.findAllByOrderByTimestampDesc().stream()
                 .map(this::mapToResponse)

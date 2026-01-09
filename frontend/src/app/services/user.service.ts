@@ -14,4 +14,8 @@ export class UserService {
   getUser(id: number): Observable<User> {
     return this.http.get<User>(`${this.apiUrl}/${id}`);
   }
+
+  searchUsers(query: string): Observable<User[]> {
+      return this.http.get<User[]>(`${this.apiUrl}/search?query=${query}`);
+  }
 }

@@ -9,7 +9,7 @@ export const authGuard: CanActivateFn = (route, state) => {
   const platformId = inject(PLATFORM_ID);
 
   if (!isPlatformBrowser(platformId)) {
-      return true; // Allow server-side rendering to proceed without redirect loop
+      return true; 
   }
 
   if (authService.isAuthenticated()) {
@@ -18,4 +18,21 @@ export const authGuard: CanActivateFn = (route, state) => {
   
   router.navigate(['/login']);
   return false;
+};
+
+export const guestGuard: CanActivateFn = (route, state) => {
+  const authService = inject(AuthService);
+  const router = inject(Router);
+  const platformId = inject(PLATFORM_ID);
+
+  if (!isPlatformBrowser(platformId)) {
+      return true;
+  }
+
+  if (authService.isAuthenticated()) {
+    router.navigate(['/']); // Redirect to home if already logged in
+    return false;
+  }
+  
+  return true;
 };
