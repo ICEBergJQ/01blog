@@ -33,7 +33,7 @@ public class Report {
     @JoinColumn(name = "reported_user_id")
     private User reportedUser; // If reporting a profile
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.LAZY) // removed cascade
     @JoinColumn(name = "reported_post_id")
     private Post reportedPost; // If reporting a post
 

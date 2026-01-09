@@ -33,6 +33,9 @@ public class Post {
     @JoinColumn(name = "user_id")
     private User user;
 
+    @OneToMany(mappedBy = "reportedPost", cascade = CascadeType.ALL, orphanRemoval = true)
+    private java.util.List<Report> reports;
+
     @PrePersist
     protected void onCreate() {
         timestamp = LocalDateTime.now();
