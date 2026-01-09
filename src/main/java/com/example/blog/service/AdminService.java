@@ -17,6 +17,7 @@ public class AdminService {
 
     private final UserRepository userRepository;
     private final ReportRepository reportRepository;
+    private final com.example.blog.repository.PostRepository postRepository; // Need to inject this
 
     public void banUser(Long userId) {
         User user = userRepository.findById(userId)
@@ -30,6 +31,13 @@ public class AdminService {
                 .orElseThrow(() -> new RuntimeException("User not found"));
         user.setEnabled(true);
         userRepository.save(user);
+    }
+
+    public void setPostVisibility(Long postId, boolean hidden) {
+        com.example.blog.model.Post post = postRepository.findById(postId)
+                .orElseThrow(() -> new RuntimeException("Post not found"));
+        post.setHidden(hidden);
+        postRepository.save(post);
     }
 
     public List<com.example.blog.dto.UserResponse> getAllUsers() {

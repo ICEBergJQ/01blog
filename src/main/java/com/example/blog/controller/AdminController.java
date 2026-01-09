@@ -37,6 +37,18 @@ public class AdminController {
         return ResponseEntity.ok().build();
     }
 
+    @PostMapping("/posts/{postId}/hide")
+    public ResponseEntity<Void> hidePost(@PathVariable Long postId) {
+        adminService.setPostVisibility(postId, true);
+        return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/posts/{postId}/unhide")
+    public ResponseEntity<Void> unhidePost(@PathVariable Long postId) {
+        adminService.setPostVisibility(postId, false);
+        return ResponseEntity.ok().build();
+    }
+
     @DeleteMapping("/reports/{reportId}")
     public ResponseEntity<Void> dismissReport(@PathVariable Long reportId) {
         adminService.dismissReport(reportId);

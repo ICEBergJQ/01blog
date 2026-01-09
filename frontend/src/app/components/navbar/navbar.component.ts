@@ -48,7 +48,8 @@ import { User } from '../../models/user.model';
                     <li *ngFor="let notif of notifications" class="dropdown-item border-bottom" [class.bg-light]="!notif.isRead">
                         <small>{{ notif.message }}</small><br>
                         <small class="text-muted" style="font-size: 0.75rem;">{{ notif.timestamp | date:'short' }}</small>
-                        <button *ngIf="!notif.isRead" class="btn btn-sm btn-link p-0 ms-2" (click)="markRead($event, notif.id)">Mark Read</button>
+                        <button *ngIf="!notif.isRead" class="btn btn-sm btn-link p-0 ms-2" (click)="toggleRead($event, notif)">Mark Read</button>
+                        <button *ngIf="notif.isRead" class="btn btn-sm btn-link p-0 ms-2" (click)="toggleRead($event, notif)">Mark Unread</button>
                     </li>
                   </ul>
               </li>
@@ -127,11 +128,16 @@ export class NavbarComponent implements OnInit {
       this.notificationService.getNotifications().subscribe(notifs => this.notifications = notifs);
   }
 
-  markRead(event: Event, id: number) {
+  toggleRead(event: Event, notif: Notification) {
       event.stopPropagation();
       event.preventDefault();
-      this.notificationService.markAsRead(id).subscribe(() => {
-          this.notifications = this.notifications.map(n => n.id === id ? {...n, isRead: true} : n);
+      
+      const action$ = notif.isRead 
+        ? this.notificationService.markAsUnread(notif.id) 
+        : this.notificationService.markAsRead(notif.id);
+
+      action$.subscribe(() => {
+          notif.isRead = !notif.isRead;
           this.updateUnreadCount();
       });
   }

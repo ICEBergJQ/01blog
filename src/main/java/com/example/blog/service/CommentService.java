@@ -3,6 +3,7 @@ package com.example.blog.service;
 import com.example.blog.dto.CommentRequest;
 import com.example.blog.dto.CommentResponse;
 import com.example.blog.model.Comment;
+import com.example.blog.model.NotificationType;
 import com.example.blog.model.Post;
 import com.example.blog.model.User;
 import com.example.blog.repository.CommentRepository;
@@ -39,7 +40,7 @@ public class CommentService {
         Comment savedComment = commentRepository.save(comment);
 
         if (!post.getUser().getUsername().equals(username)) {
-            notificationService.createNotification(post.getUser(), user.getUsername() + " commented on your post.");
+            notificationService.createNotification(post.getUser(), user, NotificationType.COMMENT, null);
         }
 
         return mapToResponse(savedComment);

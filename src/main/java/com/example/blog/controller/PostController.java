@@ -26,13 +26,13 @@ public class PostController {
     }
 
     @GetMapping
-    public ResponseEntity<List<PostResponse>> getAllPosts() {
-        return ResponseEntity.ok(postService.getAllPosts());
+    public ResponseEntity<List<PostResponse>> getAllPosts(Authentication authentication) {
+        return ResponseEntity.ok(postService.getAllPosts(authentication.getName()));
     }
 
     @GetMapping("/user/{userId}")
-    public ResponseEntity<List<PostResponse>> getPostsByUser(@PathVariable Long userId) {
-        return ResponseEntity.ok(postService.getPostsByUser(userId));
+    public ResponseEntity<List<PostResponse>> getPostsByUser(@PathVariable Long userId, Authentication authentication) {
+        return ResponseEntity.ok(postService.getPostsByUser(userId, authentication.getName()));
     }
 
     @PutMapping("/{id}")

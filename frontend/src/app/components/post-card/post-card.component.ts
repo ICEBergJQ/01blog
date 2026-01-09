@@ -6,6 +6,7 @@ import { Comment } from '../../models/comment.model';
 import { InteractionService } from '../../services/interaction.service';
 import { PostService } from '../../services/post.service';
 import { ReportService } from '../../services/report.service';
+import { AdminService } from '../../services/admin.service';
 import { Router, RouterModule } from '@angular/router';
 
 @Component({
@@ -13,7 +14,7 @@ import { Router, RouterModule } from '@angular/router';
   standalone: true,
   imports: [CommonModule, FormsModule, RouterModule],
   template: `
-    <div class="card mb-3 shadow-sm">
+    <div class="card mb-3 shadow-sm" [class.border-warning]="post.hidden">
       <div class="card-header d-flex justify-content-between align-items-center bg-white">
         <div class="d-flex align-items-center">
             <div class="fw-bold me-2">
@@ -24,8 +25,15 @@ import { Router, RouterModule } from '@angular/router';
             <small class="text-muted">{{ post.timestamp | date:'short' }}</small>
         </div>
         <div>
+            <span *ngIf="post.hidden" class="badge bg-warning text-dark me-2">HIDDEN</span>
             <button class="btn btn-sm btn-outline-warning me-1" (click)="reportPost()" *ngIf="currentUserId && currentUserId !== post.userId">
                 <i class="bi bi-flag"></i>
+            </button>
+            <button *ngIf="isAdmin && !post.hidden" class="btn btn-sm btn-outline-secondary me-1" (click)="hidePost()">
+                <i class="bi bi-eye-slash"></i>
+            </button>
+            <button *ngIf="isAdmin && post.hidden" class="btn btn-sm btn-outline-secondary me-1" (click)="unhidePost()">
+                <i class="bi bi-eye"></i>
             </button>
             <button *ngIf="isOwner && !isEditing" class="btn btn-sm btn-outline-primary me-1" (click)="enableEdit()">
                 <i class="bi bi-pencil"></i>
@@ -35,7 +43,7 @@ import { Router, RouterModule } from '@angular/router';
             </button>
         </div>
       </div>
-      <div class="card-body">
+      <div class="card-body" [class.opacity-50]="post.hidden">
         <div *ngIf="!isEditing">
             <p class="card-text">{{ post.content }}</p>
             <div *ngIf="post.mediaUrl" class="mb-3">
@@ -103,7 +111,8 @@ export class PostCardComponent implements OnInit {
   constructor(
       private interactionService: InteractionService,
       private postService: PostService,
-      private reportService: ReportService
+      private reportService: ReportService,
+      private adminService: AdminService
   ) {}
 
   get canDelete(): boolean {
@@ -130,7 +139,6 @@ export class PostCardComponent implements OnInit {
 
   saveEdit() {
       if (!this.editContent.trim()) return;
-      // Keep existing media for now, simple edit content
       const updateData = {
           content: this.editContent,
           mediaUrl: this.post.mediaUrl,
@@ -141,6 +149,20 @@ export class PostCardComponent implements OnInit {
           this.post = updatedPost;
           this.isEditing = false;
           this.postEdited.emit(updatedPost);
+      });
+  }
+
+  hidePost() {
+      if(!confirm('Hide this post?')) return;
+      this.adminService.hidePost(this.post.id).subscribe(() => {
+          this.post.hidden = true;
+      });
+  }
+
+  unhidePost() {
+      if(!confirm('Unhide this post?')) return;
+      this.adminService.unhidePost(this.post.id).subscribe(() => {
+          this.post.hidden = false;
       });
   }
 

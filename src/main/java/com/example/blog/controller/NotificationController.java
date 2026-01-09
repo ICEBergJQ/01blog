@@ -36,6 +36,12 @@ public class NotificationController {
         return ResponseEntity.ok().build();
     }
 
+    @PostMapping("/{id}/unread")
+    public ResponseEntity<Void> markAsUnread(@PathVariable Long id) {
+        notificationService.markAsUnread(id);
+        return ResponseEntity.ok().build();
+    }
+
     private NotificationResponse mapToResponse(Notification notification) {
         return NotificationResponse.builder()
                 .id(notification.getId())

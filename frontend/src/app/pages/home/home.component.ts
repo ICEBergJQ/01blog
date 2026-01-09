@@ -29,6 +29,14 @@ import { User } from '../../models/user.model';
                              <span *ngIf="selectedFile" class="ms-2 small text-muted">{{ selectedFile.name }}</span>
                              <div *ngIf="isUploading" class="spinner-border spinner-border-sm text-primary ms-2" role="status"></div>
                         </div>
+                        
+                        <!-- Media Preview -->
+                        <div *ngIf="uploadedFileUrl && uploadedMediaType !== 'NONE'" class="mb-3 position-relative d-inline-block">
+                            <img *ngIf="uploadedMediaType === 'IMAGE'" [src]="uploadedFileUrl" class="img-thumbnail" style="max-height: 150px;">
+                            <video *ngIf="uploadedMediaType === 'VIDEO'" [src]="uploadedFileUrl" controls class="img-thumbnail" style="max-height: 150px;"></video>
+                            <button type="button" class="btn btn-sm btn-danger position-absolute top-0 end-0" (click)="clearMedia()">&times;</button>
+                        </div>
+
                         <div class="d-flex justify-content-end">
                             <button type="submit" class="btn btn-primary" [disabled]="!newPostContent.trim() || isUploading">Post</button>
                         </div>
@@ -84,18 +92,28 @@ export class HomeComponent implements OnInit {
       const file: File = event.target.files[0];
       if (file) {
           this.selectedFile = file;
+          
+          // Create local preview URL immediately
+          const reader = new FileReader();
+          reader.onload = (e: any) => {
+              this.uploadedFileUrl = e.target.result; // Temporarily show local blob
+              if (file.type.startsWith('image/')) this.uploadedMediaType = 'IMAGE';
+              else if (file.type.startsWith('video/')) this.uploadedMediaType = 'VIDEO';
+          };
+          reader.readAsDataURL(file);
+
           this.isUploading = true;
           this.fileService.uploadFile(file).subscribe({
               next: (response) => {
-                  this.uploadedFileUrl = 'http://localhost:8080' + response.fileUrl; // Basic full URL construction
-                  if (file.type.startsWith('image/')) this.uploadedMediaType = 'IMAGE';
-                  else if (file.type.startsWith('video/')) this.uploadedMediaType = 'VIDEO';
+                  this.uploadedFileUrl = 'http://localhost:8080' + response.fileUrl; // Update with real server URL
                   this.isUploading = false;
               },
               error: () => {
                   alert('File upload failed');
                   this.isUploading = false;
                   this.selectedFile = null;
+                  this.uploadedFileUrl = null;
+                  this.uploadedMediaType = 'NONE';
               }
           });
       }
@@ -125,5 +143,11 @@ export class HomeComponent implements OnInit {
 
   onPostEdited(updatedPost: Post) {
       this.posts = this.posts.map(p => p.id === updatedPost.id ? updatedPost : p);
+  }
+
+  clearMedia() {
+      this.selectedFile = null;
+      this.uploadedFileUrl = null;
+      this.uploadedMediaType = 'NONE';
   }
 }

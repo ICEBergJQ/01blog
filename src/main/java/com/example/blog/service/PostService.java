@@ -35,14 +35,29 @@ public class PostService {
         return mapToResponse(savedPost);
     }
 
-    public List<PostResponse> getAllPosts() {
-        return postRepository.findAllByOrderByTimestampDesc().stream()
+    public List<PostResponse> getAllPosts(String requestingUsername) {
+        User requester = userRepository.findByUsername(requestingUsername)
+                .orElseThrow(() -> new UsernameNotFoundException("User not found"));
+        
+        List<Post> posts;
+        if (requester.getRole().name().equals("ADMIN")) {
+            posts = postRepository.findAllByOrderByTimestampDesc();
+        } else {
+            posts = postRepository.findAllVisibleByOrderByTimestampDesc();
+        }
+
+        return posts.stream()
                 .map(this::mapToResponse)
                 .collect(Collectors.toList());
     }
 
-    public List<PostResponse> getPostsByUser(Long userId) {
+    public List<PostResponse> getPostsByUser(Long userId, String requestingUsername) {
+        User requester = userRepository.findByUsername(requestingUsername)
+                .orElseThrow(() -> new UsernameNotFoundException("User not found"));
+        boolean isAdmin = requester.getRole().name().equals("ADMIN");
+
         return postRepository.findByUserIdOrderByTimestampDesc(userId).stream()
+                .filter(post -> !post.isHidden() || isAdmin || post.getUser().getId().equals(requester.getId()))
                 .map(this::mapToResponse)
                 .collect(Collectors.toList());
     }
@@ -90,6 +105,7 @@ public class PostService {
                 .timestamp(post.getTimestamp())
                 .username(post.getUser().getUsername())
                 .userId(post.getUser().getId())
+                .hidden(post.isHidden())
                 .build();
     }
 }

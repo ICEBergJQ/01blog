@@ -37,6 +37,14 @@ export class AdminService {
     return this.http.post<void>(`${this.apiUrl}/users/${userId}/unban`, {});
   }
 
+  hidePost(postId: number): Observable<void> {
+      return this.http.post<void>(`${this.apiUrl}/posts/${postId}/hide`, {});
+  }
+
+  unhidePost(postId: number): Observable<void> {
+      return this.http.post<void>(`${this.apiUrl}/posts/${postId}/unhide`, {});
+  }
+
   dismissReport(reportId: number): Observable<void> {
     return this.http.delete<void>(`${this.apiUrl}/reports/${reportId}`);
   }

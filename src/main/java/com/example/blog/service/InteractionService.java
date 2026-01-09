@@ -1,5 +1,6 @@
 package com.example.blog.service;
 
+import com.example.blog.model.NotificationType;
 import com.example.blog.model.Post;
 import com.example.blog.model.PostLike;
 import com.example.blog.model.User;
@@ -40,7 +41,7 @@ public class InteractionService {
             postLikeRepository.save(like);
             
             if (!post.getUser().getUsername().equals(username)) {
-                notificationService.createNotification(post.getUser(), user.getUsername() + " liked your post.");
+                notificationService.createNotification(post.getUser(), user, NotificationType.LIKE, null);
             }
         }
     }
@@ -82,7 +83,7 @@ public class InteractionService {
         if (!follower.getFollowing().contains(userToFollow)) {
             follower.getFollowing().add(userToFollow);
             userRepository.save(follower);
-            notificationService.createNotification(userToFollow, follower.getUsername() + " started following you.");
+            notificationService.createNotification(userToFollow, follower, NotificationType.FOLLOW, null);
         }
     }
 

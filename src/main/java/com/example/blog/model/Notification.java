@@ -23,7 +23,8 @@ public class Notification {
     private String message;
     
     @Builder.Default
-    private boolean isRead = false;
+    @Column(name = "is_read")
+    private boolean read = false;
 
     private LocalDateTime timestamp;
 

@@ -6,4 +6,5 @@ export interface Post {
     timestamp: string;
     username: string;
     userId: number;
+    hidden: boolean;
 }

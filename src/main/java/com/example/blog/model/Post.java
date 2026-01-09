@@ -36,6 +36,16 @@ public class Post {
     @OneToMany(mappedBy = "reportedPost", cascade = CascadeType.ALL, orphanRemoval = true)
     private java.util.List<Report> reports;
 
+    @OneToMany(mappedBy = "post", cascade = CascadeType.ALL, orphanRemoval = true)
+    private java.util.List<Comment> comments;
+
+    @OneToMany(mappedBy = "post", cascade = CascadeType.ALL, orphanRemoval = true)
+    private java.util.List<PostLike> likes;
+
+    @Builder.Default
+    @Column(nullable = false)
+    private boolean hidden = false;
+
     @PrePersist
     protected void onCreate() {
         timestamp = LocalDateTime.now();
