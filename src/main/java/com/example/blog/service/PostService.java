@@ -105,6 +105,7 @@ public class PostService {
                 .timestamp(post.getTimestamp())
                 .username(post.getUser().getUsername())
                 .userId(post.getUser().getId())
+                .userProfilePictureUrl(post.getUser().getProfilePictureUrl())
                 .hidden(post.isHidden())
                 .build();
     }

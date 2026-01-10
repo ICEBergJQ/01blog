@@ -18,4 +18,12 @@ export class UserService {
   searchUsers(query: string): Observable<User[]> {
       return this.http.get<User[]>(`${this.apiUrl}/search?query=${query}`);
   }
+
+  updateProfilePicture(url: string): Observable<void> {
+      return this.http.put<void>(`${this.apiUrl}/profile-picture`, { profilePictureUrl: url });
+  }
+
+  updateBio(bio: string): Observable<void> {
+      return this.http.put<void>(`${this.apiUrl}/bio`, { bio });
+  }
 }

@@ -4,6 +4,8 @@ export interface User {
     email: string;
     role: 'USER' | 'ADMIN';
     enabled: boolean;
+    profilePictureUrl?: string;
+    bio?: string;
 }
 
 export interface AuthResponse {

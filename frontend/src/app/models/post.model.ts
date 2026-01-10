@@ -7,4 +7,5 @@ export interface Post {
     username: string;
     userId: number;
     hidden: boolean;
+    userProfilePictureUrl?: string;
 }

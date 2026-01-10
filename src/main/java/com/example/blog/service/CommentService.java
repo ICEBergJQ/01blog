@@ -70,6 +70,7 @@ public class CommentService {
                 .timestamp(comment.getTimestamp())
                 .username(comment.getUser().getUsername())
                 .userId(comment.getUser().getId())
+                .userProfilePictureUrl(comment.getUser().getProfilePictureUrl())
                 .build();
     }
 }

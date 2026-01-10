@@ -19,5 +19,6 @@ public class PostResponse {
     private LocalDateTime timestamp;
     private String username;
     private Long userId;
+    private String userProfilePictureUrl;
     private boolean hidden;
 }

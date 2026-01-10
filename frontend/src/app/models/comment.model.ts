@@ -4,4 +4,5 @@ export interface Comment {
     timestamp: string;
     username: string;
     userId: number;
+    userProfilePictureUrl?: string;
 }

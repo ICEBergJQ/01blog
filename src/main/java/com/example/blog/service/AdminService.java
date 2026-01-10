@@ -48,6 +48,8 @@ public class AdminService {
                         .email(user.getEmail())
                         .role(user.getRole())
                         .enabled(user.isEnabled())
+                        .profilePictureUrl(user.getProfilePictureUrl())
+                        .bio(user.getBio())
                         .build())
                 .collect(Collectors.toList());
     }

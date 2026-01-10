@@ -14,12 +14,14 @@ import { User } from '../../models/user.model';
   template: `
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark mb-4">
       <div class="container">
-        <a class="navbar-brand" routerLink="/">01Blog</a>
+        <a class="navbar-brand d-flex align-items-center" routerLink="/">
+          <img src="assets/logo.png" alt="Dojo Logo" height="50" class="me-2">
+        </a>
         <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
           <span class="navbar-toggler-icon"></span>
         </button>
         <div class="collapse navbar-collapse" id="navbarNav">
-          <ul class="navbar-nav me-auto mb-2 mb-lg-0" *ngIf="isBrowser && userId">
+          <ul class="navbar-nav me-auto mb-2 mb-lg-0" *ngIf="isBrowser && currentUser">
              <li class="nav-item">
                 <form class="d-flex position-relative" (submit)="search()">
                     <input class="form-control form-control-sm me-2" type="search" placeholder="Search users..." aria-label="Search" [(ngModel)]="searchQuery" name="searchQuery" (input)="onSearchInput()" autocomplete="off">
@@ -54,7 +56,12 @@ import { User } from '../../models/user.model';
                   </ul>
               </li>
               <li class="nav-item">
-                <a class="nav-link" href="#" (click)="goToProfile($event)">My Block</a>
+                <a class="nav-link d-flex align-items-center" href="#" (click)="goToProfile($event)">
+                    <img [src]="currentUser?.profilePictureUrl ? 'http://localhost:8080' + currentUser?.profilePictureUrl : 'assets/default-avatar.png'" 
+                         class="rounded-circle me-2" 
+                         style="width: 25px; height: 25px; object-fit: cover;">
+                    My Block
+                </a>
               </li>
               <li class="nav-item" *ngIf="isAdmin">
                 <a class="nav-link" routerLink="/admin">Admin</a>
@@ -78,7 +85,7 @@ import { User } from '../../models/user.model';
   `
 })
 export class NavbarComponent implements OnInit {
-  userId: number | null = null;
+  currentUser: User | null = null;
   isAdmin = false;
   unreadCount = 0;
   notifications: Notification[] = [];
@@ -103,7 +110,7 @@ export class NavbarComponent implements OnInit {
           if (token) {
             this.authService.getMe().subscribe({
                 next: (user) => {
-                  this.userId = user.id;
+                  this.currentUser = user;
                   this.isAdmin = user.role === 'ADMIN';
                   this.updateUnreadCount();
                 },
@@ -113,7 +120,7 @@ export class NavbarComponent implements OnInit {
                 }
             });
           } else {
-            this.userId = null;
+            this.currentUser = null;
             this.isAdmin = false;
           }
         });
@@ -148,8 +155,8 @@ export class NavbarComponent implements OnInit {
 
   goToProfile(event: Event) {
     event.preventDefault();
-    if (this.userId) {
-      this.router.navigate(['/profile', this.userId]);
+    if (this.currentUser) {
+      this.router.navigate(['/profile', this.currentUser.id]);
     }
   }
 

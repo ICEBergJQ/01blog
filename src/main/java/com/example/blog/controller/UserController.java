@@ -4,6 +4,7 @@ import com.example.blog.dto.UserResponse;
 import com.example.blog.model.User;
 import com.example.blog.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.Data;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -22,6 +23,28 @@ public class UserController {
         return ResponseEntity.ok(userService.searchUsers(query));
     }
 
+    @PutMapping("/profile-picture")
+    public ResponseEntity<Void> updateProfilePicture(
+            @RequestBody com.example.blog.dto.UpdateProfilePictureRequest request,
+            org.springframework.security.core.Authentication authentication
+    ) {
+        System.out.println("Updating profile picture for: " + authentication.getName());
+        System.out.println("URL: " + request.getProfilePictureUrl());
+        userService.updateProfilePicture(authentication.getName(), request.getProfilePictureUrl());
+        return ResponseEntity.ok().build();
+    }
+
+    @PutMapping("/bio")
+    public ResponseEntity<Void> updateBio(
+            @RequestBody com.example.blog.dto.UpdateBioRequest request,
+            org.springframework.security.core.Authentication authentication
+    ) {
+        System.out.println("Updating bio for: " + authentication.getName());
+        System.out.println("Bio: " + request.getBio());
+        userService.updateBio(authentication.getName(), request.getBio());
+        return ResponseEntity.ok().build();
+    }
+
     @GetMapping("/{id}")
     public ResponseEntity<UserResponse> getUser(@PathVariable Long id) {
         User user = userRepository.findById(id)
@@ -29,9 +52,11 @@ public class UserController {
         return ResponseEntity.ok(UserResponse.builder()
                 .id(user.getId())
                 .username(user.getUsername())
-                .email(user.getEmail()) // Maybe hide email for public? keeping for now.
+                .email(user.getEmail())
                 .role(user.getRole())
                 .enabled(user.isEnabled())
+                .profilePictureUrl(user.getProfilePictureUrl())
+                .bio(user.getBio())
                 .build());
     }
 }

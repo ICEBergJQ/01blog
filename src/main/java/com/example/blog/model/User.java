@@ -50,6 +50,11 @@ public class User implements UserDetails {
     @Builder.Default
     private boolean enabled = true;
 
+    private String profilePictureUrl;
+
+    @Column(columnDefinition = "TEXT")
+    private String bio;
+
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
         return List.of(new SimpleGrantedAuthority("ROLE_" + role.name()));

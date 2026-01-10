@@ -1,6 +1,5 @@
 package com.example.blog.dto;
 
-import com.example.blog.model.Role;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -10,12 +9,6 @@ import lombok.NoArgsConstructor;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-public class UserResponse {
-    private Long id;
-    private String username;
-    private String email;
-    private Role role;
-    private boolean enabled;
+public class UpdateProfilePictureRequest {
     private String profilePictureUrl;
-    private String bio;
 }

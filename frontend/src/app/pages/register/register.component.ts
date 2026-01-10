@@ -22,11 +22,16 @@ import { AuthService } from '../../services/auth.service';
               </div>
               <div class="mb-3">
                 <label for="email" class="form-label">Email</label>
-                <input type="email" class="form-control" id="email" [(ngModel)]="user.email" name="email" required>
+                <input type="email" class="form-control" id="email" [(ngModel)]="user.email" name="email" required #email="ngModel" [class.is-invalid]="email.invalid && email.touched">
+                <div class="invalid-feedback">Please enter a valid email address.</div>
               </div>
               <div class="mb-3">
                 <label for="password" class="form-label">Password</label>
                 <input type="password" class="form-control" id="password" [(ngModel)]="user.password" name="password" required>
+              </div>
+              <div class="mb-3">
+                <label for="bio" class="form-label">Bio (Optional)</label>
+                <textarea class="form-control" id="bio" [(ngModel)]="user.bio" name="bio" rows="3"></textarea>
               </div>
               <div class="d-grid">
                 <button type="submit" class="btn btn-primary">Register</button>
@@ -42,7 +47,7 @@ import { AuthService } from '../../services/auth.service';
   `
 })
 export class RegisterComponent {
-  user = { username: '', email: '', password: '' };
+  user = { username: '', email: '', password: '', bio: '' };
   error = '';
 
   constructor(private authService: AuthService, private router: Router) {}
@@ -51,7 +56,7 @@ export class RegisterComponent {
     this.authService.register(this.user).subscribe({
       next: () => this.router.navigate(['/']),
       error: (err) => {
-        this.error = 'Registration failed. Try again.';
+        this.error = err.error?.message || 'Registration failed. Try again.';
         console.error(err);
       }
     });

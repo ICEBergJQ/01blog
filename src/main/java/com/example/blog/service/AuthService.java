@@ -28,6 +28,7 @@ public class AuthService {
                 .email(request.getEmail())
                 .password(passwordEncoder.encode(request.getPassword()))
                 .role(Role.USER)
+                .bio(request.getBio())
                 .build();
         repository.save(user);
         var jwtToken = jwtService.generateToken(user);
@@ -60,6 +61,8 @@ public class AuthService {
                 .email(user.getEmail())
                 .role(user.getRole())
                 .enabled(user.isEnabled())
+                .profilePictureUrl(user.getProfilePictureUrl())
+                .bio(user.getBio())
                 .build();
     }
 }

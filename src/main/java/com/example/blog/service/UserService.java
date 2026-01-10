@@ -21,6 +21,20 @@ public class UserService {
                 .collect(Collectors.toList());
     }
 
+    public void updateProfilePicture(String username, String profilePictureUrl) {
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        user.setProfilePictureUrl(profilePictureUrl);
+        userRepository.save(user);
+    }
+
+    public void updateBio(String username, String bio) {
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        user.setBio(bio);
+        userRepository.save(user);
+    }
+
     private UserResponse mapToResponse(User user) {
         return UserResponse.builder()
                 .id(user.getId())
@@ -28,6 +42,8 @@ public class UserService {
                 .email(user.getEmail())
                 .role(user.getRole())
                 .enabled(user.isEnabled())
+                .profilePictureUrl(user.getProfilePictureUrl())
+                .bio(user.getBio())
                 .build();
     }
 }

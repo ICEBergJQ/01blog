@@ -17,4 +17,5 @@ public class CommentResponse {
     private LocalDateTime timestamp;
     private String username;
     private Long userId;
+    private String userProfilePictureUrl;
 }

@@ -17,12 +17,17 @@ import { Router, RouterModule } from '@angular/router';
     <div class="card mb-3 shadow-sm" [class.border-warning]="post.hidden">
       <div class="card-header d-flex justify-content-between align-items-center bg-white">
         <div class="d-flex align-items-center">
-            <div class="fw-bold me-2">
-                <a [routerLink]="['/profile', post.userId]" class="text-decoration-none text-dark">
-                    {{ post.username }}
-                </a>
+            <img [src]="post.userProfilePictureUrl ? 'http://localhost:8080' + post.userProfilePictureUrl : 'assets/default-avatar.png'" 
+                 class="rounded-circle me-2" 
+                 style="width: 40px; height: 40px; object-fit: cover;">
+            <div>
+                <div class="fw-bold">
+                    <a [routerLink]="['/profile', post.userId]" class="text-decoration-none text-dark">
+                        {{ post.username }}
+                    </a>
+                </div>
+                <small class="text-muted" style="font-size: 0.8rem;">{{ post.timestamp | date:'short' }}</small>
             </div>
-            <small class="text-muted">{{ post.timestamp | date:'short' }}</small>
         </div>
         <div>
             <span *ngIf="post.hidden" class="badge bg-warning text-dark me-2">HIDDEN</span>
@@ -72,15 +77,20 @@ import { Router, RouterModule } from '@angular/router';
             <div class="list-group mb-3">
                 <div *ngFor="let comment of comments" class="list-group-item">
                     <div class="d-flex justify-content-between">
-                        <strong>
-                            <a [routerLink]="['/profile', comment.userId]" class="text-decoration-none text-dark">
-                                {{ comment.username }}
-                            </a>
-                        </strong>
+                        <div class="d-flex align-items-center">
+                            <img [src]="comment.userProfilePictureUrl ? 'http://localhost:8080' + comment.userProfilePictureUrl : 'assets/default-avatar.png'" 
+                                 class="rounded-circle me-2" 
+                                 style="width: 25px; height: 25px; object-fit: cover;">
+                            <strong>
+                                <a [routerLink]="['/profile', comment.userId]" class="text-decoration-none text-dark">
+                                    {{ comment.username }}
+                                </a>
+                            </strong>
+                        </div>
                         <small class="text-muted">{{ comment.timestamp | date:'short' }}</small>
                     </div>
-                    <p class="mb-0">{{ comment.content }}</p>
-                    <button *ngIf="comment.userId === currentUserId" class="btn btn-link btn-sm text-danger p-0 mt-1" (click)="deleteComment(comment.id)">Delete</button>
+                    <p class="mb-0 mt-1 ms-5">{{ comment.content }}</p>
+                    <button *ngIf="comment.userId === currentUserId" class="btn btn-link btn-sm text-danger p-0 mt-1 ms-5" (click)="deleteComment(comment.id)">Delete</button>
                 </div>
             </div>
             <form (ngSubmit)="addComment()" class="d-flex gap-2">
