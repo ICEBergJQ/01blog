@@ -1,117 +1,157 @@
-# 01Blog - Study Guide & Technical Explanation
+# 01Blog (Dojo) - Comprehensive Study Guide & Architecture
 
-This guide explains the architecture, key technologies, and important code flows of the **01Blog** project. Use this to prepare for code reviews, demos, or to understand how the fullstack application works.
+This guide explains the architecture, key technologies, and code flows of the **01Blog (Dojo)** project as it stands in its final version. Use this to prepare for code reviews, demos, or to understand the fullstack implementation details.
 
 ---
 
 ## 1. High-Level Architecture
-The project follows a **Fullstack** architecture separating the backend and frontend.
+The project follows a modern **Fullstack** architecture separating concerns between a robust backend and a reactive frontend.
 
-- **Backend (Server)**: Java Spring Boot. It provides a **REST API** to manage data. It connects to the database and handles security.
-- **Frontend (Client)**: Angular (v19+). It runs in the browser, calls the backend APIs, and renders the user interface.
-- **Database**: PostgreSQL. A relational database storing users, posts, comments, etc.
-- **Communication**: JSON over HTTP. The frontend sends requests (GET, POST, etc.) to the backend, and the backend responds with JSON data.
-
----
-
-## 2. Backend (Spring Boot)
-
-### Key Layers
-The backend code is organized into standard layers:
-1.  **Controller (`/controller`)**: The "entry point". It defines REST endpoints (e.g., `@GetMapping("/api/posts")`). It receives HTTP requests and returns HTTP responses (`ResponseEntity`).
-2.  **Service (`/service`)**: The "business logic". It contains the actual rules (e.g., "only admins can ban users"). It calls Repositories.
-3.  **Repository (`/repository`)**: The "data access". It extends `JpaRepository` to talk to the database without writing raw SQL.
-4.  **Model/Entity (`/model`)**: Classes mapped to database tables using `@Entity`.
-
-### Authentication & Security (JWT)
-The project uses **Stateless Authentication** with **JWT (JSON Web Tokens)**.
-1.  **Login**: User sends username/password -> Backend validates -> Backend creates a signed JWT string -> Returns token to client.
-2.  **Requests**: Frontend includes the token in the `Authorization: Bearer <token>` header for every request.
-3.  **Validation**: `JwtAuthenticationFilter` intercepts every request, checks if the token is valid, and extracts the user. If valid, it tells Spring Security "this user is logged in".
-
-**Key Files to Study:**
-- `SecurityConfig.java`: Configures which routes are public (login, register) and which need login.
-- `JwtService.java`: Generates and validates tokens.
-- `JwtAuthenticationFilter.java`: The filter that runs before every request.
-
-### Database Relationships (JPA)
-- **One-to-Many**: One User has many Posts (`@OneToMany`).
-- **Many-to-One**: A Comment belongs to one Post (`@ManyToOne`).
-- **Many-to-Many**: Users following other Users.
+-   **Backend**: Java 17 + Spring Boot 3.5. Exposes a **REST API**.
+-   **Frontend**: Angular 19+ (Standalone). Consumes the API via HTTP.
+-   **Database**: PostgreSQL 15 (Dockerized).
+-   **Security**: Stateless JWT Authentication with Role-Based Access Control (RBAC).
 
 ---
 
-## 3. Frontend (Angular)
+## 2. Backend Deep Dive (Spring Boot)
 
-### Key Concepts
-1.  **Standalone Components**: The app doesn't use `NgModule`. Components import what they need directly (e.g., `imports: [CommonModule]`).
-2.  **Services**: Used to fetch data. They are injected into components (Dependency Injection). e.g., `PostService` handles all HTTP calls for posts.
-3.  **Observables (RxJS)**: Angular uses "streams" of data. When you call `.subscribe()`, you are waiting for the backend to respond.
+### Core Layers
+1.  **Controllers (`/controller`)**: Entry points. E.g., `PostController` handles `POST /api/posts`. Validates inputs using `@Valid`.
+2.  **Services (`/service`)**: Business logic. E.g., `InteractionService` checks if a post is hidden before allowing a like.
+3.  **Repositories (`/repository`)**: Interfaces extending `JpaRepository` for SQL operations. E.g., `PostRepository.countByUserIdAndHiddenFalse()`.
+4.  **DTOs (`/dto`)**: Data Transfer Objects. We strictly use these (e.g., `RegisterRequest`) instead of Entities to control what data enters/leaves the API.
 
-### Authentication Flow
-1.  **Login**: `AuthService.login()` sends creds to backend. On success, it saves the JWT in `localStorage`.
-2.  **Interceptor**: `auth.interceptor.ts` automatically grabs the token from `localStorage` and adds it to the HTTP headers of *every* outgoing request.
-3.  **Guard**: `auth.guard.ts` checks if a user is logged in before letting them visit protected routes (like `/profile`).
+### Security Architecture (Critical)
+*   **Chain**: `SecurityConfig` defines the filter chain.
+*   **Filter**: `JwtAuthenticationFilter` runs before every request.
+    *   It extracts the `Bearer` token.
+    *   It validates the signature via `JwtService`.
+    *   **Crucially**: It checks `userDetails.isEnabled()`. If a user is banned, this returns `false`, and the request is blocked *immediately*, even if the token is valid.
+*   **Exception Handling**: `GlobalExceptionHandler` catches `DisabledException` (Ban) and `BadCredentialsException` (Wrong password) to return precise 403/401 codes.
 
-### Server-Side Rendering (SSR) & "Platform Browser"
-This project uses Angular Universal (SSR).
-- **The Issue**: On the server (Node.js), there is no `localStorage` or `window`. Accessing them causes crashes.
-- **The Fix**: We use `isPlatformBrowser(this.platformId)` to check if the code is running in a browser before trying to access `localStorage` or fetch authenticated data.
-
----
-
-## 4. Key Workflows to Explain
-
-### A. "How does a user create a post with an image?"
-1.  **Frontend**: User selects file -> `HomeComponent` calls `FileService.uploadFile()` -> Uploads file to backend via `FormData`.
-2.  **Backend**: `FileUploadController` receives the multipart file -> Saves it to the local `uploads/` folder -> Returns the file URL.
-3.  **Frontend**: Receives URL -> Sends a second request to `PostService.createPost()` containing the text content and the new image URL.
-4.  **Backend**: `PostController` saves the post metadata (text + URL) to the database.
-
-### B. "How does the Admin Dashboard work?"
-1.  **Frontend**: `AdminDashboardComponent` calls `AdminService.getAllReports()`.
-2.  **Backend**: `AdminController` checks if the requester has `ROLE_ADMIN`. If yes, returns list.
-3.  **Action**: Admin clicks "Delete Post". Frontend calls `deletePost`. Backend checks if user is Admin OR Owner. Since they are Admin, it allows deletion.
-
-### C. "How does 'Following' work?"
-1.  **Model**: The `User` entity has a self-referencing Many-to-Many relationship (`following` list).
-2.  **Logic**: When User A follows User B, we add User B to User A's `following` list and save.
-3.  **Feed**: The `PostRepository` could be extended to `findPostsByUserIn(List<User> following)`, effectively creating a personalized feed. (Current implementation shows global feed for MVP simplicity).
+### Key Features Logic
+*   **Media Upload**:
+    *   `FileUploadController` receives `MultipartFile`.
+    *   It detects if the file is an image (`image/*`).
+    *   **Optimization**: It uses `ImageIO` to check dimensions. If width > 1200px, it resizes the image to 1200px width (maintaining aspect ratio) before saving to disk. This optimizes storage and feed performance.
+    *   Public access to `/api/files/upload` was **revoked**. Now, users must register first (text data), get a token, and *then* upload their avatar in a second step.
+*   **Hiding Posts**:
+    *   `Post` entity has a `hidden` boolean.
+    *   `PostRepository` has a custom query `findAllVisibleByOrderByTimestampDesc` to filter these out for normal users.
+    *   Admins see everything.
 
 ---
 
+## 3. Frontend Deep Dive (Angular)
+
+### Architecture
+*   **Standalone Components**: No `NgModule`. Imports like `CommonModule`, `FormsModule`, `RouterModule` are defined per component.
+*   **Interceptor**: `auth.interceptor.ts` is the gatekeeper.
+    *   Adds `Authorization` header.
+    *   **Error Handling**: If it sees a `401` (Expired) or `403` (Banned), it **wipes the token and forces a page reload**. This ensures a clean state reset.
+*   **Guards**:
+    *   `authGuard`: Protects `/profile`, `/home`.
+    *   `guestGuard`: Protects `/login`, `/register` (redirects logged-in users to home).
+
+### UX/UI Patterns
+*   **Styles**: We use a **"Modern Dojo"** aesthetic.
+    *   Colors: Steel Blue (`#4A6D85`), Off-Black (`#0F0F0F`), Pure White.
+    *   Shapes: Sharp edges (0px radius) for buttons/inputs to feel precise/tech-focused.
+    *   Grid: 3-Column Layout (Sidebar / Feed / Info) using Bootstrap 5.
+*   **Optimistic UI**: When you follow a user, the button toggles *immediately* (and counter updates) while the API call happens in the background.
+*   **Cache Busting**: Profile pictures use a query param (`?t=...`) to force the browser to reload the image when it changes, avoiding stale avatar issues.
+
 ---
 
-## 6. Key Concepts to Know
-*Below is a list of technical concepts used in this project that you should be prepared to discuss. If you need a deep dive into any of these, ask me to explain them.*
+## 4. Key Concepts to Study
 
-### **General Architecture & Design**
-*   **RESTful API Design**: Principles of statelessness, resource-based URLs, and standard HTTP methods (GET, POST, PUT, DELETE).
-*   **Dependency Injection (DI) & Inversion of Control (IoC)**: How Spring and Angular manage object lifecycles.
-*   **Singleton Pattern**: The default scope of Spring Beans and Angular Services.
-*   **DTO (Data Transfer Object)**: Why we use separate classes for API requests/responses instead of using Entity classes directly.
-*   **CORS (Cross-Origin Resource Sharing)**: Why it exists and how it's configured.
+### A. Annotations & Validation
+*   `@Valid` / `@NotBlank` / `@Size`: How we enforce limits (e.g., max 2000 chars for posts) before the data even hits the database.
+*   `@Transactional`: Ensures that complex operations (like "Like Post" + "Send Notification") either both succeed or both fail.
 
-### **Backend (Java / Spring Boot)**
-*   **Spring Security & Filter Chain**: How requests are intercepted and authorized.
-*   **JWT (JSON Web Token)**: Anatomy (Header, Payload, Signature) and why it's used for stateless auth.
-*   **ORM (Object-Relational Mapping) & Hibernate**: Mapping Java objects to SQL tables.
-*   **JPA (Java Persistence API)**: Using Interfaces to generate database queries.
-*   **Transaction Management (`@Transactional`)**: Ensuring database atomicity during multi-step operations (like following a user).
-*   **BCrypt Hashing**: Salting and hashing for secure password storage.
+### B. Angular Reactivity
+*   `Observable` vs `Subject`: How `AuthService.currentUser$` notifies the Navbar to update the avatar/name instantly on login.
+*   `*ngIf` vs `[hidden]`: We use `*ngIf` extensively to remove elements from the DOM (like the "Edit" button for non-owners).
 
-### **Frontend (Angular)**
-*   **Component-Based Architecture**: Building a UI through modular, reusable blocks.
-*   **Standalone Components**: Angular's modern way of building apps without NgModules.
-*   **Directives (`*ngIf`, `*ngFor`)**: Conditional rendering and list handling.
-*   **Reactive Programming (RxJS)**: Using Observables, Subjects, and operators like `tap` and `switchMap`.
-*   **HTTP Interceptors**: Centralized handling of request headers (Auth).
-*   **Route Guards**: Protecting pages from unauthorized access.
-*   **SSR (Server-Side Rendering)**: How Angular pre-renders pages on the server and the concept of **Hydration**.
-*   **Zone.js**: How Angular detects changes and updates the UI.
+### C. Database Integrity
+*   **Foreign Keys**: How `ON DELETE CASCADE` (managed by JPA `CascadeType.ALL`) ensures that if a User is deleted, their Posts and Comments vanish too, preventing "orphaned" data errors.
+*   **Unique Constraints**: How the database prevents two users from having the same email (`DataIntegrityViolationException`).
 
-### **Database & Deployment**
-*   **Relational Database Normalization**: Designing table schemas and relationships.
-*   **Foreign Keys & Constraints**: Ensuring data integrity across tables.
-*   **Docker & Containerization**: Using Docker Compose to spin up consistent environments.
-*   **Stateless vs. Stateful Applications**: Understanding why the server doesn't "remember" the user between requests.
+---
+
+
+
+## 6. Under the Hood: How It Really Works
+
+
+
+### A. The Request Lifecycle
+
+When a user clicks "Login", here is the exact journey of that data:
+
+1.  **Angular**: `LoginComponent` calls `AuthService.login()`.
+
+2.  **HTTP Client**: Angular creates an HTTP POST request.
+
+3.  **Interceptor**: `AuthInterceptor` sees the request. It checks `localStorage`. If a token exists, it appends `Authorization: Bearer xyz`.
+
+4.  **Network**: The request travels to `http://localhost:8080/api/auth/authenticate`.
+
+5.  **Spring Filter**: `JwtAuthenticationFilter` intercepts the incoming request.
+
+    *   It parses the token.
+
+    *   It checks the signature (is it fake?).
+
+    *   It checks expiration.
+
+    *   It queries the DB to see if the user is `enabled`.
+
+    *   If all good, it sets `SecurityContext`.
+
+6.  **Controller**: Spring routes the request to `AuthController.authenticate()`.
+
+7.  **Service**: `AuthService` calls `AuthenticationManager`.
+
+8.  **Provider**: `DaoAuthenticationProvider` hashes the incoming password (BCrypt) and compares it with the hash in the DB.
+
+9.  **Response**: If match, a new JWT is generated and sent back JSON.
+
+
+
+### B. Dependency Injection (DI) "Wiring"
+
+You see `@RequiredArgsConstructor` everywhere. This is **Lombok** generating a constructor.
+
+*   **Spring**: When the app starts, it scans for `@Service`, `@Repository`, and `@Controller`.
+
+*   **Wiring**: It sees `PostService` needs `PostRepository`. Spring creates the Repository instance first, then passes it into the Service's constructor. This "wiring" happens automatically (Inversion of Control).
+
+
+
+### C. JPA & Hibernate Magic
+
+When you call `postRepository.findAllVisibleByOrderByTimestampDesc()`, you didn't write SQL.
+
+*   **Proxy**: Spring Data JPA creates a dynamic proxy class at runtime.
+
+*   **Translation**: It parses the method name or `@Query` annotation.
+
+*   **SQL Generation**: Hibernate translates JPQL (`SELECT p FROM Post...`) into native PostgreSQL SQL (`SELECT id, content... FROM posts WHERE hidden = false...`).
+
+*   **Mapping**: The result rows are converted back into Java `Post` objects.
+
+
+
+### D. JWT Signing
+
+The token isn't encrypted (hidden); it's **signed**.
+
+*   **Header**: "I am a JWT".
+
+*   **Payload**: "User is 'admin', role is 'ADMIN', expires at 10:00".
+
+*   **Signature**: `HMACSHA256(Header + Payload, SecretKey)`.
+
+*   **Verification**: The server takes the header+payload from the user, hashes it again with its private `SecretKey`, and checks if the result matches the signature. If a hacker changed "USER" to "ADMIN" in the payload, the hash wouldn't match the signature, and the server rejects it.

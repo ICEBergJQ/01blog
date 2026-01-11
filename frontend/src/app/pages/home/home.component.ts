@@ -76,17 +76,18 @@ import { User } from '../../models/user.model';
 
         <!-- Right Sidebar: Info -->
         <div class="col-lg-3 d-none d-lg-block">
-            <div class="card border-0 shadow-sm">
+            <div class="card border-0 shadow-sm sticky-top" style="top: 90px;">
                 <div class="card-body">
                     <h6 class="card-title text-muted mb-3">DOJO RULES</h6>
                     <ul class="list-unstyled small mb-0">
-                        <li class="mb-2"><i class="bi bi-check-circle me-2 text-success"></i>Respect the code.</li>
+                        <li class="mb-2"><i class="bi bi-check-circle me-2 text-success"></i>Respect your peers.</li>
                         <li class="mb-2"><i class="bi bi-check-circle me-2 text-success"></i>Share wisdom.</li>
-                        <li class="mb-0"><i class="bi bi-check-circle me-2 text-success"></i>Keep it clean.</li>
+                        <li class="mb-2"><i class="bi bi-check-circle me-2 text-success"></i>Keep it clean.</li>
+                        <li class="mb-0"><i class="bi bi-check-circle me-2 text-success"></i>Respect the dojo rules.</li>
                     </ul>
                 </div>
             </div>
-            <div class="mt-4 text-center small text-muted">
+            <div class="mt-4 text-center small text-muted sticky-top" style="top: 300px;">
                 &copy; 2026 Dojo Platform
             </div>
         </div>
