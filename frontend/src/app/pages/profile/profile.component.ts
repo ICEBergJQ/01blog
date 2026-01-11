@@ -39,18 +39,23 @@ import { PostCardComponent } from '../../components/post-card/post-card.componen
                     </div>
                     <div>
                         <h2>{{ user.username }}</h2>
+                        <div class="d-flex gap-3 mb-2 text-muted small">
+                            <span><strong>{{ user.postsCount || 0 }}</strong> posts</span>
+                            <span><strong>{{ user.followersCount || 0 }}</strong> followers</span>
+                            <span><strong>{{ user.followingCount || 0 }}</strong> following</span>
+                        </div>
                         <p class="text-muted">{{ user.email }}</p> 
                         <span class="badge bg-secondary mb-2">{{ user.role }}</span>
                         
                         <div *ngIf="!isEditingBio" class="d-flex align-items-center">
-                            <p class="mb-1" *ngIf="user.bio">{{ user.bio }}</p>
+                            <p class="mb-1" *ngIf="user.bio" style="white-space: pre-wrap;">{{ user.bio }}</p>
                             <p class="text-muted fst-italic mb-1" *ngIf="!user.bio">No bio yet.</p>
                             <button *ngIf="isOwner" class="btn btn-sm btn-outline-primary ms-2" (click)="editBio()" title="Edit Bio">
                                 <i class="bi bi-pencil"></i>
                             </button>
                         </div>
                         <div *ngIf="isEditingBio">
-                            <textarea class="form-control mb-2" [(ngModel)]="editBioContent" rows="3"></textarea>
+                            <textarea class="form-control mb-2" [(ngModel)]="editBioContent" rows="3" maxlength="200" placeholder="Max 200 characters"></textarea>
                             <button class="btn btn-sm btn-success me-2" (click)="saveBio()">Save</button>
                             <button class="btn btn-sm btn-secondary" (click)="cancelBioEdit()">Cancel</button>
                         </div>
@@ -196,6 +201,9 @@ export class ProfileComponent implements OnInit {
       if (!this.user) return;
       this.interactionService.followUser(this.user.id).subscribe(() => {
           this.isFollowing = true;
+          if (this.user && this.user.followersCount !== undefined) {
+              this.user.followersCount++;
+          }
       });
   }
 
@@ -203,12 +211,16 @@ export class ProfileComponent implements OnInit {
       if (!this.user) return;
       this.interactionService.unfollowUser(this.user.id).subscribe(() => {
           this.isFollowing = false;
+          if (this.user && this.user.followersCount !== undefined && this.user.followersCount > 0) {
+              this.user.followersCount--;
+          }
       });
   }
 
   reportUser() {
-      const reason = prompt('Why are you reporting this user?');
+      let reason = prompt('Why are you reporting this user? (Max 500 chars)');
       if (reason && this.user) {
+          if (reason.length > 500) reason = reason.substring(0, 500);
           this.reportService.submitReport({
               reason,
               reportedUserId: this.user.id

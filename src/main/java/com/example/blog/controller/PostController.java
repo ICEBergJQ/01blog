@@ -19,7 +19,7 @@ public class PostController {
 
     @PostMapping
     public ResponseEntity<PostResponse> createPost(
-            @RequestBody PostRequest request,
+            @jakarta.validation.Valid @RequestBody PostRequest request,
             Authentication authentication
     ) {
         return ResponseEntity.ok(postService.createPost(request, authentication.getName()));

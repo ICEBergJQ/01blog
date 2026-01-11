@@ -6,6 +6,9 @@ export interface User {
     enabled: boolean;
     profilePictureUrl?: string;
     bio?: string;
+    followersCount?: number;
+    followingCount?: number;
+    postsCount?: number;
 }
 
 export interface AuthResponse {

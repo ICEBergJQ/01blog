@@ -14,6 +14,7 @@ import java.util.stream.Collectors;
 public class UserService {
 
     private final UserRepository userRepository;
+    private final com.example.blog.repository.PostRepository postRepository;
 
     public List<UserResponse> searchUsers(String query) {
         return userRepository.findByUsernameContainingIgnoreCase(query).stream()
@@ -44,6 +45,9 @@ public class UserService {
                 .enabled(user.isEnabled())
                 .profilePictureUrl(user.getProfilePictureUrl())
                 .bio(user.getBio())
+                .followersCount(user.getFollowers() != null ? user.getFollowers().size() : 0)
+                .followingCount(user.getFollowing() != null ? user.getFollowing().size() : 0)
+                .postsCount(postRepository.countByUserIdAndHiddenFalse(user.getId()))
                 .build();
     }
 }

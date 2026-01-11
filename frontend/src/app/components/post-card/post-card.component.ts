@@ -13,6 +13,22 @@ import { Router, RouterModule } from '@angular/router';
   selector: 'app-post-card',
   standalone: true,
   imports: [CommonModule, FormsModule, RouterModule],
+  styles: [`
+    .comments-container {
+        max-height: 300px;
+        overflow-y: auto;
+        margin-bottom: 1rem;
+        padding-right: 5px;
+    }
+    /* Simple scrollbar styling */
+    .comments-container::-webkit-scrollbar {
+        width: 4px;
+    }
+    .comments-container::-webkit-scrollbar-thumb {
+        background: #ccc;
+        border-radius: 10px;
+    }
+  `],
   template: `
     <div class="card mb-3 shadow-sm" [class.border-warning]="post.hidden">
       <div class="card-header d-flex justify-content-between align-items-center bg-white">
@@ -30,7 +46,7 @@ import { Router, RouterModule } from '@angular/router';
             </div>
         </div>
         <div>
-            <span *ngIf="post.hidden" class="badge bg-warning text-dark me-2">HIDDEN</span>
+            <span *ngIf="post.hidden" class="badge bg-secondary me-2">HIDDEN</span>
             <button class="btn btn-sm btn-outline-warning me-1" (click)="reportPost()" *ngIf="currentUserId && currentUserId !== post.userId">
                 <i class="bi bi-flag"></i>
             </button>
@@ -50,7 +66,7 @@ import { Router, RouterModule } from '@angular/router';
       </div>
       <div class="card-body" [class.opacity-50]="post.hidden">
         <div *ngIf="!isEditing">
-            <p class="card-text">{{ post.content }}</p>
+            <p class="card-text" style="white-space: pre-wrap;">{{ displayContent }}<a href="#" *ngIf="shouldShowSeeMore" (click)="$event.preventDefault(); isExpanded = !isExpanded" class="text-decoration-none ms-1">{{ isExpanded ? 'See less' : 'See more' }}</a></p>
             <div *ngIf="post.mediaUrl" class="mb-3">
                 <img [src]="post.mediaUrl" class="img-fluid rounded" alt="Post media" *ngIf="post.mediaType === 'IMAGE'">
                 <video [src]="post.mediaUrl" controls class="img-fluid rounded" *ngIf="post.mediaType === 'VIDEO'"></video>
@@ -65,16 +81,16 @@ import { Router, RouterModule } from '@angular/router';
         </div>
         
         <div class="d-flex gap-3 border-top pt-3">
-            <button class="btn btn-sm" [class.btn-primary]="isLiked" [class.btn-outline-primary]="!isLiked" (click)="toggleLike()">
+            <button class="btn btn-sm" [class.btn-primary]="isLiked" [class.btn-outline-primary]="!isLiked" (click)="toggleLike()" [disabled]="post.hidden">
                 <i class="bi bi-hand-thumbs-up"></i> {{ isLiked ? 'Liked' : 'Like' }} ({{ likeCount }})
             </button>
-            <button class="btn btn-sm btn-outline-secondary" (click)="toggleComments()">
+            <button class="btn btn-sm btn-outline-secondary" (click)="toggleComments()" [disabled]="post.hidden">
                 <i class="bi bi-chat"></i> Comments
             </button>
         </div>
 
         <div *ngIf="showComments" class="mt-3">
-            <div class="list-group mb-3">
+            <div class="list-group mb-3 comments-container">
                 <div *ngFor="let comment of comments" class="list-group-item">
                     <div class="d-flex justify-content-between">
                         <div class="d-flex align-items-center">
@@ -89,12 +105,18 @@ import { Router, RouterModule } from '@angular/router';
                         </div>
                         <small class="text-muted">{{ comment.timestamp | date:'short' }}</small>
                     </div>
-                    <p class="mb-0 mt-1 ms-5">{{ comment.content }}</p>
+                    <div class="mb-0 mt-1 ms-5" style="white-space: pre-wrap;">
+                        <span *ngIf="expandedComments.has(comment.id) || !shouldShowSeeMoreComment(comment)">{{ comment.content }}</span>
+                        <span *ngIf="!expandedComments.has(comment.id) && shouldShowSeeMoreComment(comment)">{{ truncateText(comment.content) + '...' }}</span>
+                        <a href="#" *ngIf="shouldShowSeeMoreComment(comment)" (click)="$event.preventDefault(); toggleCommentExpand(comment.id)" class="text-decoration-none ms-1">
+                            {{ expandedComments.has(comment.id) ? 'See less' : 'See more' }}
+                        </a>
+                    </div>
                     <button *ngIf="comment.userId === currentUserId" class="btn btn-link btn-sm text-danger p-0 mt-1 ms-5" (click)="deleteComment(comment.id)">Delete</button>
                 </div>
             </div>
             <form (ngSubmit)="addComment()" class="d-flex gap-2">
-                <input type="text" class="form-control form-control-sm" placeholder="Write a comment..." [(ngModel)]="newComment" name="newComment" required>
+                <input type="text" class="form-control form-control-sm" placeholder="Write a comment... (Max 500 chars)" [(ngModel)]="newComment" name="newComment" required maxlength="500">
                 <button type="submit" class="btn btn-sm btn-primary">Post</button>
             </form>
         </div>
@@ -117,6 +139,58 @@ export class PostCardComponent implements OnInit {
   
   isEditing = false;
   editContent = '';
+  isExpanded = false;
+  readonly contentLimit = 200;
+  expandedComments = new Set<number>();
+
+  get shouldShowSeeMore(): boolean {
+      if (!this.post.content) return false;
+      return this.post.content.length > this.contentLimit || this.post.content.split('\n').length > 5;
+  }
+
+  get displayContent(): string {
+      if (!this.post.content) return '';
+      if (this.isExpanded || !this.shouldShowSeeMore) {
+          return this.post.content;
+      }
+      return this.truncateText(this.post.content);
+  }
+
+  shouldShowSeeMoreComment(comment: Comment): boolean {
+      if (!comment.content) return false;
+      return comment.content.length > this.contentLimit || comment.content.split('\n').length > 5;
+  }
+
+  getCommentDisplayContent(comment: Comment): string {
+      if (!comment.content) return '';
+      if (this.expandedComments.has(comment.id) || !this.shouldShowSeeMoreComment(comment)) {
+          return comment.content;
+      }
+      return this.truncateText(comment.content);
+  }
+
+  toggleCommentExpand(commentId: number) {
+      if (this.expandedComments.has(commentId)) {
+          this.expandedComments.delete(commentId);
+      } else {
+          this.expandedComments.add(commentId);
+      }
+  }
+
+  truncateText(text: string): string {
+      let snippet = text;
+      const lines = snippet.split('\n');
+      
+      if (lines.length > 5) {
+          snippet = lines.slice(0, 5).join('\n');
+      }
+      
+      if (snippet.length > this.contentLimit) {
+          snippet = snippet.slice(0, this.contentLimit);
+      }
+      
+      return snippet + '...';
+  }
 
   constructor(
       private interactionService: InteractionService,
@@ -177,8 +251,9 @@ export class PostCardComponent implements OnInit {
   }
 
   reportPost() {
-      const reason = prompt('Why are you reporting this post?');
+      let reason = prompt('Why are you reporting this post? (Max 500 chars)');
       if (reason) {
+          if (reason.length > 500) reason = reason.substring(0, 500);
           this.reportService.submitReport({
               reason,
               reportedPostId: this.post.id

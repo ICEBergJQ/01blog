@@ -50,6 +50,9 @@ public class AdminService {
                         .enabled(user.isEnabled())
                         .profilePictureUrl(user.getProfilePictureUrl())
                         .bio(user.getBio())
+                        .followersCount(user.getFollowers() != null ? user.getFollowers().size() : 0)
+                        .followingCount(user.getFollowing() != null ? user.getFollowing().size() : 0)
+                        .postsCount(postRepository.countByUserIdAndHiddenFalse(user.getId()))
                         .build())
                 .collect(Collectors.toList());
     }

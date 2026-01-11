@@ -31,6 +31,10 @@ public class CommentService {
         Post post = postRepository.findById(request.getPostId())
                 .orElseThrow(() -> new RuntimeException("Post not found"));
 
+        if (post.isHidden()) {
+            throw new RuntimeException("Comments are disabled for hidden posts");
+        }
+
         Comment comment = Comment.builder()
                 .content(request.getContent())
                 .user(user)

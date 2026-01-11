@@ -15,4 +15,8 @@ public interface PostRepository extends JpaRepository<Post, Long> {
     List<Post> findAllVisibleByOrderByTimestampDesc();
 
     List<Post> findAllByOrderByTimestampDesc();
+    
+    int countByUserId(Long userId);
+    
+    int countByUserIdAndHiddenFalse(Long userId);
 }

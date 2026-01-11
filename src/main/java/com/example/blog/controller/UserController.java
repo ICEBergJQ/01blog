@@ -4,7 +4,6 @@ import com.example.blog.dto.UserResponse;
 import com.example.blog.model.User;
 import com.example.blog.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
-import lombok.Data;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -17,6 +16,7 @@ public class UserController {
 
     private final UserRepository userRepository;
     private final com.example.blog.service.UserService userService;
+    private final com.example.blog.repository.PostRepository postRepository;
 
     @GetMapping("/search")
     public ResponseEntity<List<UserResponse>> searchUsers(@RequestParam String query) {
@@ -36,7 +36,7 @@ public class UserController {
 
     @PutMapping("/bio")
     public ResponseEntity<Void> updateBio(
-            @RequestBody com.example.blog.dto.UpdateBioRequest request,
+            @jakarta.validation.Valid @RequestBody com.example.blog.dto.UpdateBioRequest request,
             org.springframework.security.core.Authentication authentication
     ) {
         System.out.println("Updating bio for: " + authentication.getName());
@@ -57,6 +57,9 @@ public class UserController {
                 .enabled(user.isEnabled())
                 .profilePictureUrl(user.getProfilePictureUrl())
                 .bio(user.getBio())
+                .followersCount(user.getFollowers() != null ? user.getFollowers().size() : 0)
+                .followingCount(user.getFollowing() != null ? user.getFollowing().size() : 0)
+                .postsCount(postRepository.countByUserIdAndHiddenFalse(user.getId()))
                 .build());
     }
 }

@@ -19,7 +19,7 @@ public class ReportController {
 
     @PostMapping
     public ResponseEntity<Void> submitReport(
-            @RequestBody ReportRequest request,
+            @jakarta.validation.Valid @RequestBody ReportRequest request,
             Authentication authentication
     ) {
         reportService.submitReport(request, authentication.getName());

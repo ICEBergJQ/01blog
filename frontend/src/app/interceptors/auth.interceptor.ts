@@ -24,15 +24,14 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
   
   return next(authReq).pipe(
       catchError((error: HttpErrorResponse) => {
-          if (error.status === 401) {
+          if (error.status === 401 || error.status === 403) {
               if (isPlatformBrowser(platformId)) {
-                  localStorage.removeItem('token');
+                  const currentPath = window.location.pathname;
+                  if (currentPath !== '/login' && currentPath !== '/register') {
+                      localStorage.removeItem('token');
+                      window.location.reload();
+                  }
               }
-              if (!router.url.includes('/login')) {
-                  router.navigate(['/login']);
-              }
-          } else if (error.status === 403) {
-              router.navigate(['/']);
           }
           return throwError(() => error);
       })

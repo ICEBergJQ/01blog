@@ -21,6 +21,7 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
     private final AuthenticationManager authenticationManager;
+    private final com.example.blog.repository.PostRepository postRepository; // Injected
 
     public AuthenticationResponse register(RegisterRequest request) {
         var user = User.builder()
@@ -29,6 +30,7 @@ public class AuthService {
                 .password(passwordEncoder.encode(request.getPassword()))
                 .role(Role.USER)
                 .bio(request.getBio())
+                .profilePictureUrl(request.getProfilePictureUrl())
                 .build();
         repository.save(user);
         var jwtToken = jwtService.generateToken(user);
@@ -63,6 +65,9 @@ public class AuthService {
                 .enabled(user.isEnabled())
                 .profilePictureUrl(user.getProfilePictureUrl())
                 .bio(user.getBio())
+                .followersCount(user.getFollowers() != null ? user.getFollowers().size() : 0)
+                .followingCount(user.getFollowing() != null ? user.getFollowing().size() : 0)
+                .postsCount(postRepository.countByUserIdAndHiddenFalse(user.getId()))
                 .build();
     }
 }

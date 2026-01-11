@@ -30,6 +30,10 @@ public class InteractionService {
         Post post = postRepository.findById(postId)
                 .orElseThrow(() -> new RuntimeException("Post not found"));
 
+        if (post.isHidden()) {
+            throw new RuntimeException("Interaction is disabled for hidden posts");
+        }
+
         Optional<PostLike> existingLike = postLikeRepository.findByUserAndPost(user, post);
         if (existingLike.isPresent()) {
             postLikeRepository.delete(existingLike.get());

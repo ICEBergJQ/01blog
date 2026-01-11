@@ -18,4 +18,7 @@ public class UserResponse {
     private boolean enabled;
     private String profilePictureUrl;
     private String bio;
+    private int followersCount;
+    private int followingCount;
+    private int postsCount;
 }

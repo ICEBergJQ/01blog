@@ -19,7 +19,7 @@ public class CommentController {
 
     @PostMapping
     public ResponseEntity<CommentResponse> addComment(
-            @RequestBody CommentRequest request,
+            @jakarta.validation.Valid @RequestBody CommentRequest request,
             Authentication authentication
     ) {
         return ResponseEntity.ok(commentService.addComment(request, authentication.getName()));

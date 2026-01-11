@@ -1,6 +1,7 @@
 import { Component, OnInit, Inject, PLATFORM_ID } from '@angular/core';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { RouterModule } from '@angular/router'; // Added import
 import { PostService } from '../../services/post.service';
 import { FileService } from '../../services/file.service';
 import { Post } from '../../models/post.model';
@@ -11,39 +12,52 @@ import { User } from '../../models/user.model';
 @Component({
   selector: 'app-home',
   standalone: true,
-  imports: [CommonModule, FormsModule, PostCardComponent],
+  imports: [CommonModule, FormsModule, PostCardComponent, RouterModule],
   template: `
-    <div class="row justify-content-center">
-        <div class="col-md-8">
-            <div class="card mb-4 shadow-sm">
+    <div class="container-fluid px-lg-5"> <!-- Use container-fluid with side padding for wider look, removing excessive top margin -->
+      <div class="row g-4 pt-3">
+        <!-- Left Sidebar: Profile Snippet -->
+        <div class="col-lg-3 d-none d-lg-block">
+            <div class="card border-0 shadow-sm sticky-top" style="top: 90px;" *ngIf="currentUser">
+                <div class="card-body text-center">
+                    <img [src]="currentUser.profilePictureUrl ? 'http://localhost:8080' + currentUser.profilePictureUrl : 'assets/default-avatar.png'" 
+                         class="rounded-circle mb-3 border" 
+                         style="width: 90px; height: 90px; object-fit: cover;">
+                    <h5 class="mb-1">{{ currentUser.username }}</h5>
+                    <p class="text-muted small mb-3">{{ currentUser.bio || 'Digital Warrior' }}</p>
+                    <div class="d-grid">
+                        <a [routerLink]="['/profile', currentUser.id]" class="btn btn-outline-secondary btn-sm">View Profile</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Center Feed -->
+        <div class="col-lg-6 col-md-12">
+            <!-- Create Post Widget -->
+            <div class="card border-0 shadow-sm mb-4" *ngIf="currentUser">
                 <div class="card-body">
                     <form (ngSubmit)="createPost()">
-                        <div class="mb-3">
-                            <textarea class="form-control" rows="3" placeholder="What did you learn today?" [(ngModel)]="newPostContent" name="content" required></textarea>
-                        </div>
-                        <div class="mb-3">
-                             <label class="form-label btn btn-sm btn-outline-secondary">
-                                <i class="bi bi-paperclip"></i> Attach Media
-                                <input type="file" (change)="onFileSelected($event)" hidden>
-                             </label>
-                             <span *ngIf="selectedFile" class="ms-2 small text-muted">{{ selectedFile.name }}</span>
-                             <div *ngIf="isUploading" class="spinner-border spinner-border-sm text-primary ms-2" role="status"></div>
-                        </div>
+                        <textarea class="form-control mb-3" rows="2" placeholder="Share your knowledge... (Max 2000 chars)" [(ngModel)]="newPostContent" name="content" style="resize: none;" maxlength="2000"></textarea>
                         
-                        <!-- Media Preview -->
-                        <div *ngIf="uploadedFileUrl && uploadedMediaType !== 'NONE'" class="mb-3 position-relative d-inline-block">
-                            <img *ngIf="uploadedMediaType === 'IMAGE'" [src]="uploadedFileUrl" class="img-thumbnail" style="max-height: 150px;">
-                            <video *ngIf="uploadedMediaType === 'VIDEO'" [src]="uploadedFileUrl" controls class="img-thumbnail" style="max-height: 150px;"></video>
-                            <button type="button" class="btn btn-sm btn-danger position-absolute top-0 end-0" (click)="clearMedia()">&times;</button>
+                        <div *ngIf="uploadedFileUrl" class="mb-3 position-relative d-inline-block">
+                            <img *ngIf="uploadedMediaType === 'IMAGE'" [src]="uploadedFileUrl" class="rounded" style="max-height: 150px;">
+                            <video *ngIf="uploadedMediaType === 'VIDEO'" [src]="uploadedFileUrl" controls class="rounded" style="max-height: 150px;"></video>
+                            <button type="button" class="btn btn-sm btn-danger position-absolute top-0 end-0 rounded-circle" (click)="clearMedia()" style="padding: 0 6px;">&times;</button>
                         </div>
 
-                        <div class="d-flex justify-content-end">
-                            <button type="submit" class="btn btn-primary" [disabled]="!newPostContent.trim() || isUploading">Post</button>
+                        <div class="d-flex justify-content-between align-items-center">
+                             <label class="btn btn-sm btn-light text-muted mb-0">
+                                <i class="bi bi-image"></i> Media
+                                <input type="file" (change)="onFileSelected($event)" hidden>
+                             </label>
+                             <button type="submit" class="btn btn-primary px-4" [disabled]="(!newPostContent.trim() && !uploadedFileUrl) || isUploading">POST</button>
                         </div>
                     </form>
                 </div>
             </div>
 
+            <!-- Feed Stream -->
             <div *ngFor="let post of posts">
                 <app-post-card 
                     [post]="post" 
@@ -53,7 +67,30 @@ import { User } from '../../models/user.model';
                     (postEdited)="onPostEdited($event)"
                 ></app-post-card>
             </div>
+            
+            <div *ngIf="posts.length === 0" class="text-center py-5 text-muted">
+                <div class="mb-3"><i class="bi bi-journal-x" style="font-size: 2rem;"></i></div>
+                <p>The dojo is quiet. Be the first to speak.</p>
+            </div>
         </div>
+
+        <!-- Right Sidebar: Info -->
+        <div class="col-lg-3 d-none d-lg-block">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <h6 class="card-title text-muted mb-3">DOJO RULES</h6>
+                    <ul class="list-unstyled small mb-0">
+                        <li class="mb-2"><i class="bi bi-check-circle me-2 text-success"></i>Respect the code.</li>
+                        <li class="mb-2"><i class="bi bi-check-circle me-2 text-success"></i>Share wisdom.</li>
+                        <li class="mb-0"><i class="bi bi-check-circle me-2 text-success"></i>Keep it clean.</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="mt-4 text-center small text-muted">
+                &copy; 2026 Dojo Platform
+            </div>
+        </div>
+      </div>
     </div>
   `
 })
@@ -120,7 +157,7 @@ export class HomeComponent implements OnInit {
   }
 
   createPost() {
-      if (!this.newPostContent.trim()) return;
+      if (!this.newPostContent.trim() && !this.uploadedFileUrl) return;
 
       const postData = {
           content: this.newPostContent,
