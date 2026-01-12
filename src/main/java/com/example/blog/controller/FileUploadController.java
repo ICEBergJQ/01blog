@@ -18,6 +18,8 @@ import java.nio.file.StandardCopyOption;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
+import java.util.Arrays;
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/files")
@@ -36,6 +38,17 @@ public class FileUploadController {
 
     @PostMapping("/upload")
     public ResponseEntity<Map<String, String>> uploadFile(@RequestParam("file") MultipartFile file) {
+        // Validate File Type
+        List<String> allowedTypes = Arrays.asList(
+            "image/jpeg", "image/png", "image/gif", "image/webp",
+            "video/mp4", "video/webm", "video/quicktime"
+        );
+        
+        String contentType = file.getContentType();
+        if (contentType == null || !allowedTypes.contains(contentType)) {
+            throw new RuntimeException("Invalid file type. Only images (JPG, PNG, GIF, WEBP) and videos (MP4, WEBM, MOV) are allowed.");
+        }
+
         String fileName = UUID.randomUUID().toString() + "_" + file.getOriginalFilename();
 
         try {
