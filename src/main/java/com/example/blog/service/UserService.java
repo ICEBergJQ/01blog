@@ -16,9 +16,24 @@ public class UserService {
     private final UserRepository userRepository;
     private final com.example.blog.repository.PostRepository postRepository;
 
+    public UserResponse getUser(Long id, String requestingUsername) {
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        
+        boolean isAdmin = false;
+        if (requestingUsername != null) {
+             User requester = userRepository.findByUsername(requestingUsername).orElse(null);
+             if (requester != null && requester.getRole().name().equals("ADMIN")) {
+                 isAdmin = true;
+             }
+        }
+
+        return mapToResponse(user, isAdmin);
+    }
+
     public List<UserResponse> searchUsers(String query) {
         return userRepository.findByUsernameContainingIgnoreCase(query).stream()
-                .map(this::mapToResponse)
+                .map(u -> mapToResponse(u, false)) // Search usually public, show visible count
                 .collect(Collectors.toList());
     }
 
@@ -36,7 +51,9 @@ public class UserService {
         userRepository.save(user);
     }
 
-    private UserResponse mapToResponse(User user) {
+    private UserResponse mapToResponse(User user, boolean isAdmin) {
+        int postCount = isAdmin ? postRepository.countByUserId(user.getId()) : postRepository.countByUserIdAndHiddenFalse(user.getId());
+        
         return UserResponse.builder()
                 .id(user.getId())
                 .username(user.getUsername())
@@ -47,7 +64,7 @@ public class UserService {
                 .bio(user.getBio())
                 .followersCount(user.getFollowers() != null ? user.getFollowers().size() : 0)
                 .followingCount(user.getFollowing() != null ? user.getFollowing().size() : 0)
-                .postsCount(postRepository.countByUserIdAndHiddenFalse(user.getId()))
+                .postsCount(postCount)
                 .build();
     }
 }

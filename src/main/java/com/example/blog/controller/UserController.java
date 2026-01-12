@@ -46,20 +46,8 @@ public class UserController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<UserResponse> getUser(@PathVariable Long id) {
-        User user = userRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("User not found"));
-        return ResponseEntity.ok(UserResponse.builder()
-                .id(user.getId())
-                .username(user.getUsername())
-                .email(user.getEmail())
-                .role(user.getRole())
-                .enabled(user.isEnabled())
-                .profilePictureUrl(user.getProfilePictureUrl())
-                .bio(user.getBio())
-                .followersCount(user.getFollowers() != null ? user.getFollowers().size() : 0)
-                .followingCount(user.getFollowing() != null ? user.getFollowing().size() : 0)
-                .postsCount(postRepository.countByUserIdAndHiddenFalse(user.getId()))
-                .build());
+    public ResponseEntity<UserResponse> getUser(@PathVariable Long id, org.springframework.security.core.Authentication authentication) {
+        String username = authentication != null ? authentication.getName() : null;
+        return ResponseEntity.ok(userService.getUser(id, username));
     }
 }
