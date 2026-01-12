@@ -49,6 +49,7 @@ The project follows a modern **Fullstack** architecture separating concerns betw
 
 ### Architecture
 *   **Standalone Components**: No `NgModule`. Imports like `CommonModule`, `FormsModule`, `RouterModule` are defined per component.
+*   **Modern HTTP**: `app.config.ts` uses `provideHttpClient(withFetch())`. This enables the native Fetch API, which is critical for **SSR** performance and compatibility (Node.js environments).
 *   **Interceptor**: `auth.interceptor.ts` is the gatekeeper.
     *   Adds `Authorization` header.
     *   **Error Handling**: If it sees a `401` (Expired) or `403` (Banned), it **wipes the token and forces a page reload**. This ensures a clean state reset.
