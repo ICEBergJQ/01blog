@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
+import { ToastService } from '../../services/toast.service';
 
 @Component({
   selector: 'app-register',
@@ -14,7 +15,6 @@ import { AuthService } from '../../services/auth.service';
         <div class="card shadow-sm">
           <div class="card-body">
             <h3 class="card-title text-center mb-4">Register</h3>
-            <div *ngIf="error" class="alert alert-danger">{{ error }}</div>
             <form (ngSubmit)="onSubmit()">
               <div class="mb-3">
                 <label for="username" class="form-label">Username</label>
@@ -49,22 +49,25 @@ import { AuthService } from '../../services/auth.service';
 })
 export class RegisterComponent {
   user = { username: '', email: '', password: '', bio: '' };
-  error = '';
   isSubmitting = false;
 
   constructor(
       private authService: AuthService, 
-      private router: Router
+      private router: Router,
+      private toastService: ToastService
   ) {}
 
   onSubmit() {
     this.isSubmitting = true;
     this.authService.register(this.user).subscribe({
-      next: () => this.router.navigate(['/']),
+      next: () => {
+          this.router.navigate(['/']);
+          this.toastService.show('Registration successful! Welcome.', 'success');
+      },
       error: (err) => {
         this.isSubmitting = false;
-        this.error = err.error?.message || 'Registration failed. Try again.';
-        console.error(err);
+        const msg = err.error?.message || 'Registration failed. Try again.';
+        this.toastService.show(msg, 'error');
       }
     });
   }

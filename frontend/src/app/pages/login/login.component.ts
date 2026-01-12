@@ -1,8 +1,9 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Router, RouterModule } from '@angular/router'; // Added RouterModule
+import { Router, RouterModule } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
+import { ToastService } from '../../services/toast.service';
 
 @Component({
   selector: 'app-login',
@@ -14,7 +15,6 @@ import { AuthService } from '../../services/auth.service';
         <div class="card shadow-sm">
           <div class="card-body">
             <h3 class="card-title text-center mb-4">Login</h3>
-            <div *ngIf="error" class="alert alert-danger">{{ error }}</div>
             <form (ngSubmit)="onSubmit()">
               <div class="mb-3">
                 <label for="username" class="form-label">Username</label>
@@ -39,22 +39,27 @@ import { AuthService } from '../../services/auth.service';
 })
 export class LoginComponent {
   credentials = { username: '', password: '' };
-  error = '';
 
-  constructor(private authService: AuthService, private router: Router) {}
+  constructor(
+      private authService: AuthService, 
+      private router: Router,
+      private toastService: ToastService
+  ) {}
 
   onSubmit() {
     this.authService.login(this.credentials).subscribe({
-      next: () => this.router.navigate(['/']),
+      next: () => {
+          this.router.navigate(['/']);
+          this.toastService.show('Welcome back!', 'success');
+      },
       error: (err) => {
+        let msg = "Login failed";
         if (err.status === 403 && err.error && err.error.message === "User is disabled") {
-             this.error = "Your account has been banned.";
+             msg = "Your account has been banned.";
         } else if (err.status === 401) {
-             this.error = "Invalid credentials";
-        } else {
-             this.error = "Login failed. " + (err.error?.message || "");
+             msg = "Invalid credentials";
         }
-        console.error(err);
+        this.toastService.show(msg, 'error');
       }
     });
   }

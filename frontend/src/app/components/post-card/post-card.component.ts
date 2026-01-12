@@ -7,20 +7,21 @@ import { InteractionService } from '../../services/interaction.service';
 import { PostService } from '../../services/post.service';
 import { ReportService } from '../../services/report.service';
 import { AdminService } from '../../services/admin.service';
+import { ToastService } from '../../services/toast.service';
 import { Router, RouterModule } from '@angular/router';
 
 @Component({
   selector: 'app-post-card',
   standalone: true,
   imports: [CommonModule, FormsModule, RouterModule],
-  styles: [`
+  styles: [
+    `
     .comments-container {
         max-height: 300px;
         overflow-y: auto;
         margin-bottom: 1rem;
         padding-right: 5px;
     }
-    /* Simple scrollbar styling */
     .comments-container::-webkit-scrollbar {
         width: 4px;
     }
@@ -143,6 +144,14 @@ export class PostCardComponent implements OnInit {
   readonly contentLimit = 200;
   expandedComments = new Set<number>();
 
+  constructor(
+      private interactionService: InteractionService,
+      private postService: PostService,
+      private reportService: ReportService,
+      private adminService: AdminService,
+      private toastService: ToastService
+  ) {}
+
   get shouldShowSeeMore(): boolean {
       if (!this.post.content) return false;
       return this.post.content.length > this.contentLimit || this.post.content.split('\n').length > 5;
@@ -192,13 +201,6 @@ export class PostCardComponent implements OnInit {
       return snippet + '...';
   }
 
-  constructor(
-      private interactionService: InteractionService,
-      private postService: PostService,
-      private reportService: ReportService,
-      private adminService: AdminService
-  ) {}
-
   get canDelete(): boolean {
       return this.currentUserId === this.post.userId || this.isAdmin;
   }
@@ -229,24 +231,36 @@ export class PostCardComponent implements OnInit {
           mediaType: this.post.mediaType
       };
       
-      this.postService.updatePost(this.post.id, updateData).subscribe(updatedPost => {
-          this.post = updatedPost;
-          this.isEditing = false;
-          this.postEdited.emit(updatedPost);
+      this.postService.updatePost(this.post.id, updateData).subscribe({
+          next: (updatedPost) => {
+              this.post = updatedPost;
+              this.isEditing = false;
+              this.postEdited.emit(updatedPost);
+              this.toastService.show('Post updated successfully', 'success');
+          },
+          error: () => this.toastService.show('Failed to update post', 'error')
       });
   }
 
   hidePost() {
       if(!confirm('Hide this post?')) return;
-      this.adminService.hidePost(this.post.id).subscribe(() => {
-          this.post.hidden = true;
+      this.adminService.hidePost(this.post.id).subscribe({
+          next: () => {
+              this.post.hidden = true;
+              this.toastService.show('Post hidden', 'info');
+          },
+          error: () => this.toastService.show('Failed to hide post', 'error')
       });
   }
 
   unhidePost() {
       if(!confirm('Unhide this post?')) return;
-      this.adminService.unhidePost(this.post.id).subscribe(() => {
-          this.post.hidden = false;
+      this.adminService.unhidePost(this.post.id).subscribe({
+          next: () => {
+              this.post.hidden = false;
+              this.toastService.show('Post visible', 'success');
+          },
+          error: () => this.toastService.show('Failed to unhide post', 'error')
       });
   }
 
@@ -257,7 +271,10 @@ export class PostCardComponent implements OnInit {
           this.reportService.submitReport({
               reason,
               reportedPostId: this.post.id
-          }).subscribe(() => alert('Report submitted.'));
+          }).subscribe({
+              next: () => this.toastService.show('Report submitted', 'success'),
+              error: () => this.toastService.show('Failed to submit report', 'error')
+          });
       }
   }
 
@@ -267,9 +284,13 @@ export class PostCardComponent implements OnInit {
   }
 
   toggleLike() {
-      this.interactionService.toggleLike(this.post.id).subscribe(() => {
-          this.isLiked = !this.isLiked;
-          this.likeCount += this.isLiked ? 1 : -1;
+      this.interactionService.toggleLike(this.post.id).subscribe({
+          next: () => {
+              this.isLiked = !this.isLiked;
+              this.likeCount += this.isLiked ? 1 : -1;
+              if (this.isLiked) this.toastService.show('Post liked', 'success');
+          },
+          error: () => this.toastService.show('Failed to like post', 'error')
       });
   }
 
@@ -286,23 +307,35 @@ export class PostCardComponent implements OnInit {
 
   addComment() {
       if (!this.newComment.trim()) return;
-      this.interactionService.addComment(this.post.id, this.newComment).subscribe(comment => {
-          this.comments.push(comment);
-          this.newComment = '';
+      this.interactionService.addComment(this.post.id, this.newComment).subscribe({
+          next: (comment) => {
+              this.comments.push(comment);
+              this.newComment = '';
+              this.toastService.show('Comment added', 'success');
+          },
+          error: () => this.toastService.show('Failed to add comment', 'error')
       });
   }
 
   deleteComment(commentId: number) {
       if (!confirm('Delete this comment?')) return;
-      this.interactionService.deleteComment(commentId).subscribe(() => {
-          this.comments = this.comments.filter(c => c.id !== commentId);
+      this.interactionService.deleteComment(commentId).subscribe({
+          next: () => {
+              this.comments = this.comments.filter(c => c.id !== commentId);
+              this.toastService.show('Comment deleted', 'warning');
+          },
+          error: () => this.toastService.show('Failed to delete comment', 'error')
       });
   }
 
   deletePost() {
       if (!confirm('Delete this post?')) return;
-      this.postService.deletePost(this.post.id).subscribe(() => {
-          this.postDeleted.emit(this.post.id);
+      this.postService.deletePost(this.post.id).subscribe({
+          next: () => {
+              this.postDeleted.emit(this.post.id);
+              this.toastService.show('Post deleted', 'warning');
+          },
+          error: () => this.toastService.show('Failed to delete post', 'error')
       });
   }
 }

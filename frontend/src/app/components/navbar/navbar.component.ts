@@ -6,66 +6,14 @@ import { AuthService } from '../../services/auth.service';
 import { NotificationService, Notification } from '../../services/notification.service';
 import { UserService } from '../../services/user.service';
 import { User } from '../../models/user.model';
+import { ToastService } from '../../services/toast.service';
 
 @Component({
   selector: 'app-navbar',
   standalone: true,
   imports: [CommonModule, RouterModule, FormsModule],
-  styles: [`
-    .notification-dropdown {
-        width: 320px;
-        max-height: 450px;
-        overflow-y: auto;
-        padding: 0;
-        border: none;
-        box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
-    }
-    .notification-header {
-        padding: 0.75rem 1rem;
-        background-color: #f8f9fa;
-        border-bottom: 1px solid #e9ecef;
-        font-weight: 600;
-        color: #495057;
-    }
-    .notification-item {
-        padding: 0.75rem 1rem;
-        border-bottom: 1px solid #f1f3f5;
-        white-space: normal; /* Allow text wrapping */
-        display: flex;
-        flex-direction: column;
-        transition: background-color 0.2s;
-    }
-    .notification-item:hover {
-        background-color: #f8f9fa;
-    }
-    .notification-item.unread {
-        background-color: #e8f0fe; /* Light blue tint for unread */
-    }
-    .notification-item:last-child {
-        border-bottom: none;
-    }
-    .notif-meta {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-top: 0.25rem;
-    }
-    .notif-time {
-        font-size: 0.75rem;
-        color: #6c757d;
-    }
-    .btn-mark {
-        font-size: 0.75rem;
-        padding: 0;
-        text-decoration: none;
-        color: #0d6efd;
-    }
-    .btn-mark:hover {
-        text-decoration: underline;
-    }
-  `],
   template: `
-    <nav class="navbar navbar-expand-lg navbar-dark sticky-top" style="background-color: #4A6D85 !important; border-bottom: 1px solid #0F0F0F; z-index: 1030;">
+    <nav class="navbar navbar-expand-lg navbar-dark sticky-top" style="background-color: #4a4a4a !important; border-bottom: 1px solid #666; z-index: 1030;">
       <div class="container">
         <a class="navbar-brand d-flex align-items-center" routerLink="/">
           <img src="assets/logo.png" alt="Dojo Logo" height="40">
@@ -74,8 +22,6 @@ import { User } from '../../models/user.model';
           <span class="navbar-toggler-icon"></span>
         </button>
         <div class="collapse navbar-collapse" id="navbarNav">
-          <!-- Left side nav removed -->
-
           <ul class="navbar-nav ms-auto align-items-start align-items-lg-center">
             <ng-container *ngIf="isBrowser && (authService.currentUser$ | async); else guestLinks">
               <li class="nav-item me-lg-3 me-0 mb-2 mb-lg-0" *ngIf="currentUser">
@@ -107,7 +53,6 @@ import { User } from '../../models/user.model';
                         {{ unreadCount }}
                     </span>
                   </a>
-                  <!-- Improved Notification Dropdown -->
                   <div class="dropdown-menu dropdown-menu-end notification-dropdown" aria-labelledby="navbarDropdown">
                     <div class="notification-header">Notifications</div>
                     <div *ngIf="notifications.length === 0" class="p-3 text-center text-muted">No notifications</div>
@@ -125,7 +70,7 @@ import { User } from '../../models/user.model';
                 <a class="nav-link d-flex align-items-center" href="#" (click)="goToProfile($event)">
                     <img [src]="currentUser?.profilePictureUrl ? 'http://localhost:8080' + currentUser?.profilePictureUrl : 'assets/default-avatar.png'" 
                          class="rounded-circle me-2" 
-                         style="width: 25px; height: 25px; object-fit: cover;">
+                         style="width: 25px; height: 25px; object-fit: cover; border: 1px solid #fff;">
                     My Profile
                 </a>
               </li>
@@ -169,6 +114,7 @@ export class NavbarComponent implements OnInit {
       private router: Router,
       private notificationService: NotificationService,
       private userService: UserService,
+      private toastService: ToastService,
       @Inject(PLATFORM_ID) private platformId: Object
   ) {
       this.isBrowser = isPlatformBrowser(this.platformId);
@@ -213,14 +159,19 @@ export class NavbarComponent implements OnInit {
         ? this.notificationService.markAsUnread(notif.id) 
         : this.notificationService.markAsRead(notif.id);
 
-      action$.subscribe(() => {
-          notif.isRead = !notif.isRead;
-          this.updateUnreadCount();
+      action$.subscribe({
+          next: () => {
+              notif.isRead = !notif.isRead;
+              this.updateUnreadCount();
+              this.toastService.show(notif.isRead ? 'Marked as read' : 'Marked as unread', 'info');
+          },
+          error: () => this.toastService.show('Failed to update notification', 'error')
       });
   }
 
   logout() {
     this.authService.logout();
+    this.toastService.show('Logged out successfully', 'info');
   }
 
   goToProfile(event: Event) {
