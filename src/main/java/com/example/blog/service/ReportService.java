@@ -30,16 +30,16 @@ public class ReportService {
         if (request.getReportedUserId() != null) {
             User reportedUser = userRepository.findById(request.getReportedUserId())
                     .orElseThrow(() -> new RuntimeException("Reported user not found"));
+            
+            if (reportedUser.getRole().name().equals("ADMIN")) {
+                throw new RuntimeException("You cannot report an admin");
+            }
             reportBuilder.reportedUser(reportedUser);
         }
 
         if (request.getReportedPostId() != null) {
             Post reportedPost = postRepository.findById(request.getReportedPostId())
                     .orElseThrow(() -> new RuntimeException("Reported post not found"));
-            
-            if (reportedPost.getUser().getRole().name().equals("ADMIN")) {
-                throw new RuntimeException("You cannot report an admin's post");
-            }
             reportBuilder.reportedPost(reportedPost);
         }
 
