@@ -1,6 +1,6 @@
 import { Component, OnInit, Inject, PLATFORM_ID } from '@angular/core';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
-import { FormsModule } from '@angular/forms'; // Added this
+import { FormsModule } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
 import { UserService } from '../../services/user.service';
 import { PostService } from '../../services/post.service';
@@ -11,31 +11,30 @@ import { FileService } from '../../services/file.service';
 import { Post } from '../../models/post.model';
 import { User } from '../../models/user.model';
 import { PostCardComponent } from '../../components/post-card/post-card.component';
+import { ToastService } from '../../services/toast.service';
 
 @Component({
   selector: 'app-profile',
   standalone: true,
-  imports: [CommonModule, FormsModule, PostCardComponent], // Added FormsModule here
+  imports: [CommonModule, FormsModule, PostCardComponent],
   template: `
     <div class="container" *ngIf="user">
         <div class="card mb-4 shadow-sm">
             <div class="card-body d-flex justify-content-between align-items-center">
                 <div class="d-flex align-items-center">
-                    <div class="position-relative me-3" style="cursor: pointer;" (click)="triggerFileInput()" *ngIf="isOwner">
+                    <div class="position-relative me-3">
                         <img [src]="profileImageUrl" 
                              class="rounded-circle" 
-                             style="width: 100px; height: 100px; object-fit: cover;">
+                             style="width: 100px; height: 100px; object-fit: cover; cursor: pointer;"
+                             (click)="triggerFileInput()"
+                             [title]="isOwner ? 'Click to change' : ''">
                         <div class="position-absolute top-0 end-0 bg-white rounded-circle border shadow-sm d-flex justify-content-center align-items-center"
-                             style="width: 30px; height: 30px; transform: translate(25%, -25%);">
+                             style="width: 30px; height: 30px; transform: translate(25%, -25%);"
+                             *ngIf="isOwner" (click)="triggerFileInput()">
                             <i class="bi bi-pencil text-primary" style="font-size: 0.8rem;"></i>
                         </div>
                         <input type="file" #fileInput (change)="onFileSelected($event)" hidden>
                         <div *ngIf="isUploading" class="position-absolute top-50 start-50 translate-middle spinner-border spinner-border-sm text-primary" role="status"></div>
-                    </div>
-                    <div class="position-relative me-3" *ngIf="!isOwner">
-                         <img [src]="profileImageUrl" 
-                             class="rounded-circle" 
-                             style="width: 100px; height: 100px; object-fit: cover;">
                     </div>
                     <div>
                         <h2>{{ user.username }}</h2>
@@ -78,8 +77,14 @@ import { PostCardComponent } from '../../components/post-card/post-card.componen
                 (postDeleted)="onPostDeleted($event)"
             ></app-post-card>
         </div>
-        <div *ngIf="posts.length === 0" class="text-center text-muted mt-4">
+        <div *ngIf="posts.length === 0 && !isLoadingPosts" class="text-center text-muted mt-4">
             No posts yet.
+        </div>
+        
+        <div class="text-center mt-4 mb-4" *ngIf="hasMore && posts.length > 0">
+            <button class="btn btn-outline-secondary" (click)="loadMorePosts(user.id)" [disabled]="isLoadingPosts">
+                {{ isLoadingPosts ? 'Loading...' : 'Load More' }}
+            </button>
         </div>
     </div>
   `
@@ -92,7 +97,13 @@ export class ProfileComponent implements OnInit {
   isUploading = false;
   isEditingBio = false;
   editBioContent = '';
-  profileImageUrl = 'assets/default-avatar.png'; // Local property for the URL
+  profileImageUrl = 'assets/default-avatar.png';
+  
+  // Pagination
+  nextCursor: number | null = null;
+  hasMore = true;
+  isLoadingPosts = false;
+  pageSize = 5;
 
   constructor(
     private route: ActivatedRoute,
@@ -102,15 +113,13 @@ export class ProfileComponent implements OnInit {
     private authService: AuthService,
     private reportService: ReportService,
     private fileService: FileService,
+    private toastService: ToastService,
     @Inject(PLATFORM_ID) private platformId: Object
   ) {}
 
   get isOwner(): boolean {
       return this.currentUser?.id === this.user?.id;
   }
-
-  // Removed dynamic getter to fix NG0100
-  // getFreshProfileUrl(...) 
 
   ngOnInit() {
     if (isPlatformBrowser(this.platformId)) {
@@ -127,10 +136,32 @@ export class ProfileComponent implements OnInit {
   loadProfile(id: number) {
       this.userService.getUser(id).subscribe(user => {
           this.user = user;
-          this.updateLocalProfileImageUrl(); // Update the URL once
+          this.updateLocalProfileImageUrl();
           this.checkFollowStatus(id);
       });
-      this.postService.getUserPosts(id).subscribe(posts => this.posts = posts);
+      // Reset posts
+      this.posts = [];
+      this.nextCursor = null;
+      this.hasMore = true;
+      this.loadMorePosts(id);
+  }
+
+  loadMorePosts(userId: number) {
+      if (this.isLoadingPosts || !this.hasMore) return;
+      this.isLoadingPosts = true;
+
+      this.postService.getUserPosts(userId, this.nextCursor, this.pageSize).subscribe({
+          next: (res) => {
+              this.posts = [...this.posts, ...res.content];
+              this.hasMore = res.hasMore;
+              this.nextCursor = res.nextCursor;
+              this.isLoadingPosts = false;
+          },
+          error: () => {
+              this.isLoadingPosts = false;
+              this.toastService.show('Failed to load posts', 'error');
+          }
+      });
   }
 
   updateLocalProfileImageUrl() {
@@ -151,11 +182,15 @@ export class ProfileComponent implements OnInit {
   }
 
   saveBio() {
-      this.userService.updateBio(this.editBioContent).subscribe(() => {
-          if (this.user) {
-              this.user.bio = this.editBioContent;
-          }
-          this.isEditingBio = false;
+      this.userService.updateBio(this.editBioContent).subscribe({
+          next: () => {
+              if (this.user) {
+                  this.user.bio = this.editBioContent;
+              }
+              this.isEditingBio = false;
+              this.toastService.show('Bio updated', 'success');
+          },
+          error: () => this.toastService.show('Failed to update bio', 'error')
       });
   }
 
@@ -173,10 +208,11 @@ export class ProfileComponent implements OnInit {
           this.fileService.uploadFile(file).subscribe({
               next: (res) => {
                   this.updateProfilePicture(res.fileUrl);
+                  this.toastService.show('Profile picture updated', 'success');
               },
               error: () => {
                   this.isUploading = false;
-                  alert('Upload failed');
+                  this.toastService.show('Upload failed', 'error');
               }
           });
       }
@@ -199,21 +235,29 @@ export class ProfileComponent implements OnInit {
 
   follow() {
       if (!this.user) return;
-      this.interactionService.followUser(this.user.id).subscribe(() => {
-          this.isFollowing = true;
-          if (this.user && this.user.followersCount !== undefined) {
-              this.user.followersCount++;
-          }
+      this.interactionService.followUser(this.user.id).subscribe({
+          next: () => {
+              this.isFollowing = true;
+              if (this.user && this.user.followersCount !== undefined) {
+                  this.user.followersCount++;
+              }
+              this.toastService.show(`Following ${this.user.username}`, 'success');
+          },
+          error: () => this.toastService.show('Failed to follow', 'error')
       });
   }
 
   unfollow() {
       if (!this.user) return;
-      this.interactionService.unfollowUser(this.user.id).subscribe(() => {
-          this.isFollowing = false;
-          if (this.user && this.user.followersCount !== undefined && this.user.followersCount > 0) {
-              this.user.followersCount--;
-          }
+      this.interactionService.unfollowUser(this.user.id).subscribe({
+          next: () => {
+              this.isFollowing = false;
+              if (this.user && this.user.followersCount !== undefined && this.user.followersCount > 0) {
+                  this.user.followersCount--;
+              }
+              this.toastService.show(`Unfollowed ${this.user.username}`, 'info');
+          },
+          error: () => this.toastService.show('Failed to unfollow', 'error')
       });
   }
 
@@ -224,7 +268,10 @@ export class ProfileComponent implements OnInit {
           this.reportService.submitReport({
               reason,
               reportedUserId: this.user.id
-          }).subscribe(() => alert('Report submitted.'));
+          }).subscribe({
+              next: () => this.toastService.show('Report submitted', 'success'),
+              error: () => this.toastService.show('Failed to submit report', 'error')
+          });
       }
   }
 
