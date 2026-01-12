@@ -1,5 +1,6 @@
 package com.example.blog.service;
 
+import com.example.blog.dto.PageResponse;
 import com.example.blog.dto.PostRequest;
 import com.example.blog.dto.PostResponse;
 import com.example.blog.model.Post;
@@ -7,6 +8,9 @@ import com.example.blog.model.User;
 import com.example.blog.repository.PostRepository;
 import com.example.blog.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
@@ -35,22 +39,27 @@ public class PostService {
         return mapToResponse(savedPost);
     }
 
-    public List<PostResponse> getAllPosts(String requestingUsername) {
+    public PageResponse<PostResponse> getAllPosts(String requestingUsername, int page, int size) {
         User requester = userRepository.findByUsername(requestingUsername)
                 .orElseThrow(() -> new UsernameNotFoundException("User not found"));
         
-        List<Post> posts;
+        PageRequest pageRequest = PageRequest.of(page, size);
+        Page<Post> postsPage;
+        
         if (requester.getRole().name().equals("ADMIN")) {
-            posts = postRepository.findAllByOrderByTimestampDesc();
+            postsPage = postRepository.findAllByOrderByTimestampDesc(pageRequest);
         } else {
-            posts = postRepository.findAllVisibleByOrderByTimestampDesc();
+            postsPage = postRepository.findAllVisibleByOrderByTimestampDesc(pageRequest);
         }
 
-        return posts.stream()
+        List<PostResponse> content = postsPage.getContent().stream()
                 .map(this::mapToResponse)
                 .collect(Collectors.toList());
+                
+        return new PageResponse<>(content, postsPage.getNumber(), postsPage.getSize(), postsPage.getTotalElements(), postsPage.getTotalPages(), postsPage.isLast());
     }
 
+    @org.springframework.transaction.annotation.Transactional(readOnly = true)
     public List<PostResponse> getPostsByUser(Long userId, String requestingUsername) {
         User requester = userRepository.findByUsername(requestingUsername)
                 .orElseThrow(() -> new UsernameNotFoundException("User not found"));
@@ -86,7 +95,14 @@ public class PostService {
             throw new RuntimeException("You can only edit your own posts");
         }
 
-        post.setContent(request.getContent());
+        String newContent = request.getContent();
+        String mediaUrl = request.getMediaUrl() != null ? request.getMediaUrl() : post.getMediaUrl();
+
+        if ((newContent == null || newContent.trim().isEmpty()) && (mediaUrl == null || mediaUrl.isEmpty())) {
+            throw new RuntimeException("Post must have either text content or media");
+        }
+
+        post.setContent(newContent);
         if (request.getMediaUrl() != null) {
             post.setMediaUrl(request.getMediaUrl());
             post.setMediaType(request.getMediaType());

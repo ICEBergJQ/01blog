@@ -36,6 +36,10 @@ public class ReportService {
         if (request.getReportedPostId() != null) {
             Post reportedPost = postRepository.findById(request.getReportedPostId())
                     .orElseThrow(() -> new RuntimeException("Reported post not found"));
+            
+            if (reportedPost.getUser().getRole().name().equals("ADMIN")) {
+                throw new RuntimeException("You cannot report an admin's post");
+            }
             reportBuilder.reportedPost(reportedPost);
         }
 

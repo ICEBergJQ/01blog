@@ -76,7 +76,7 @@ import { Router, RouterModule } from '@angular/router';
             <textarea class="form-control mb-2" [(ngModel)]="editContent"></textarea>
             <div class="d-flex justify-content-end gap-2">
                 <button class="btn btn-sm btn-secondary" (click)="cancelEdit()">Cancel</button>
-                <button class="btn btn-sm btn-success" (click)="saveEdit()">Save</button>
+                <button class="btn btn-sm btn-success" (click)="saveEdit()" [disabled]="!editContent.trim() && !post.mediaUrl">Save</button>
             </div>
         </div>
         
@@ -222,7 +222,7 @@ export class PostCardComponent implements OnInit {
   }
 
   saveEdit() {
-      if (!this.editContent.trim()) return;
+      if (!this.editContent.trim() && !this.post.mediaUrl) return;
       const updateData = {
           content: this.editContent,
           mediaUrl: this.post.mediaUrl,

@@ -68,9 +68,15 @@ import { User } from '../../models/user.model';
                 ></app-post-card>
             </div>
             
-            <div *ngIf="posts.length === 0" class="text-center py-5 text-muted">
+            <div *ngIf="posts.length === 0 && !isLoadingPosts" class="text-center py-5 text-muted">
                 <div class="mb-3"><i class="bi bi-journal-x" style="font-size: 2rem;"></i></div>
                 <p>The dojo is quiet. Be the first to speak.</p>
+            </div>
+            
+            <div class="text-center mt-4" *ngIf="hasMore">
+                <button class="btn btn-outline-secondary" (click)="loadPosts()" [disabled]="isLoadingPosts">
+                    {{ isLoadingPosts ? 'Loading...' : 'Load More' }}
+                </button>
             </div>
         </div>
 
@@ -103,6 +109,11 @@ export class HomeComponent implements OnInit {
   uploadedFileUrl: string | null = null;
   uploadedMediaType: string = 'NONE';
   isUploading = false;
+  
+  currentPage = 0;
+  pageSize = 10;
+  hasMore = true;
+  isLoadingPosts = false;
 
   constructor(
       private postService: PostService,
@@ -123,39 +134,18 @@ export class HomeComponent implements OnInit {
   }
 
   loadPosts() {
-      this.postService.getAllPosts().subscribe(posts => this.posts = posts);
+      if (this.isLoadingPosts) return;
+      this.isLoadingPosts = true;
+      
+      this.postService.getAllPosts(this.currentPage, this.pageSize).subscribe(res => {
+          this.posts = [...this.posts, ...res.content];
+          this.hasMore = !res.last;
+          this.currentPage++;
+          this.isLoadingPosts = false;
+      });
   }
 
-  onFileSelected(event: any) {
-      const file: File = event.target.files[0];
-      if (file) {
-          this.selectedFile = file;
-          
-          // Create local preview URL immediately
-          const reader = new FileReader();
-          reader.onload = (e: any) => {
-              this.uploadedFileUrl = e.target.result; // Temporarily show local blob
-              if (file.type.startsWith('image/')) this.uploadedMediaType = 'IMAGE';
-              else if (file.type.startsWith('video/')) this.uploadedMediaType = 'VIDEO';
-          };
-          reader.readAsDataURL(file);
-
-          this.isUploading = true;
-          this.fileService.uploadFile(file).subscribe({
-              next: (response) => {
-                  this.uploadedFileUrl = 'http://localhost:8080' + response.fileUrl; // Update with real server URL
-                  this.isUploading = false;
-              },
-              error: () => {
-                  alert('File upload failed');
-                  this.isUploading = false;
-                  this.selectedFile = null;
-                  this.uploadedFileUrl = null;
-                  this.uploadedMediaType = 'NONE';
-              }
-          });
-      }
-  }
+  // ... (onFileSelected, createPost etc)
 
   createPost() {
       if (!this.newPostContent.trim() && !this.uploadedFileUrl) return;
@@ -167,7 +157,7 @@ export class HomeComponent implements OnInit {
       };
 
       this.postService.createPost(postData).subscribe(post => {
-          this.posts.unshift(post);
+          this.posts.unshift(post); // Add new post to top
           this.newPostContent = '';
           this.selectedFile = null;
           this.uploadedFileUrl = null;

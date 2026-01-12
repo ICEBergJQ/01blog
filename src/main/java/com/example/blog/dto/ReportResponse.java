@@ -1,5 +1,6 @@
 package com.example.blog.dto;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -17,6 +18,7 @@ public class ReportResponse {
     private LocalDateTime timestamp;
     private String reporterUsername;
     private String reportedUsername;
-    private Long reportedUserId; // Added this
+    private Long reportedUserId;
     private Long reportedPostId;
+    private boolean postHidden;
 }

@@ -1,5 +1,6 @@
 package com.example.blog.controller;
 
+import com.example.blog.dto.PageResponse;
 import com.example.blog.dto.ReportResponse;
 import com.example.blog.service.AdminService;
 import lombok.RequiredArgsConstructor;
@@ -16,13 +17,19 @@ public class AdminController {
     private final AdminService adminService;
 
     @GetMapping("/reports")
-    public ResponseEntity<List<ReportResponse>> getAllReports() {
-        return ResponseEntity.ok(adminService.getAllReports());
+    public ResponseEntity<PageResponse<ReportResponse>> getAllReports(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size
+    ) {
+        return ResponseEntity.ok(adminService.getAllReports(page, size));
     }
 
     @GetMapping("/users")
-    public ResponseEntity<List<com.example.blog.dto.UserResponse>> getAllUsers() {
-        return ResponseEntity.ok(adminService.getAllUsers());
+    public ResponseEntity<PageResponse<com.example.blog.dto.UserResponse>> getAllUsers(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size
+    ) {
+        return ResponseEntity.ok(adminService.getAllUsers(page, size));
     }
 
     @PostMapping("/users/{userId}/ban")

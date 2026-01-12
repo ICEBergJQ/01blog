@@ -1,5 +1,6 @@
 package com.example.blog.controller;
 
+import com.example.blog.dto.PageResponse;
 import com.example.blog.dto.PostRequest;
 import com.example.blog.dto.PostResponse;
 import com.example.blog.service.PostService;
@@ -26,8 +27,12 @@ public class PostController {
     }
 
     @GetMapping
-    public ResponseEntity<List<PostResponse>> getAllPosts(Authentication authentication) {
-        return ResponseEntity.ok(postService.getAllPosts(authentication.getName()));
+    public ResponseEntity<PageResponse<PostResponse>> getAllPosts(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            Authentication authentication
+    ) {
+        return ResponseEntity.ok(postService.getAllPosts(authentication.getName(), page, size));
     }
 
     @GetMapping("/user/{userId}")

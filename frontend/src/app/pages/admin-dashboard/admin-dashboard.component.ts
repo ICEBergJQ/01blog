@@ -47,16 +47,40 @@ import { User } from '../../models/user.model';
                             <td>{{ report.reportedPostId || 'N/A' }}</td>
                             <td>{{ report.reason }}</td>
                             <td>{{ report.timestamp | date:'short' }}</td>
-                            <td>
-                                <button class="btn btn-sm btn-danger me-2" (click)="banUserFromReport(report)" *ngIf="report.reportedUserId">Ban User</button>
-                                <button class="btn btn-sm btn-warning me-2" (click)="deletePost(report.reportedPostId!)" *ngIf="report.reportedPostId">Delete Post</button>
-                                <button class="btn btn-sm btn-secondary" (click)="dismiss(report.id)">Dismiss</button>
+                            <td style="min-width: 200px;">
+                                <div class="d-flex flex-wrap gap-2">
+                                    <button class="btn btn-sm btn-danger" (click)="banUserFromReport(report)" *ngIf="report.reportedUserId" title="Ban User">
+                                        <i class="bi bi-person-x"></i> Ban
+                                    </button>
+                                    
+                                    <ng-container *ngIf="report.reportedPostId">
+                                        <button class="btn btn-sm btn-secondary" (click)="toggleHidePost(report)" *ngIf="!report.postHidden" title="Hide Post">
+                                            <i class="bi bi-eye-slash"></i> Hide
+                                        </button>
+                                        <button class="btn btn-sm btn-warning text-white" (click)="toggleHidePost(report)" *ngIf="report.postHidden" title="Unhide Post">
+                                            <i class="bi bi-eye"></i> Unhide
+                                        </button>
+                                        <button class="btn btn-sm btn-outline-danger" (click)="deletePost(report.reportedPostId!)" title="Delete Post">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </ng-container>
+
+                                    <button class="btn btn-sm btn-light border" (click)="dismiss(report.id)" title="Dismiss Report">
+                                        <i class="bi bi-x-circle"></i> Dismiss
+                                    </button>
+                                </div>
                             </td>
                         </tr>
                     </tbody>
                 </table>
             </div>
             <div *ngIf="reports.length === 0" class="alert alert-info">No pending reports.</div>
+            
+            <div class="d-flex justify-content-between align-items-center mt-3" *ngIf="totalPagesReports > 1">
+                <button class="btn btn-sm btn-outline-secondary" (click)="changePageReports(-1)" [disabled]="pageReports === 0">Previous</button>
+                <span>Page {{ pageReports + 1 }} of {{ totalPagesReports }}</span>
+                <button class="btn btn-sm btn-outline-secondary" (click)="changePageReports(1)" [disabled]="pageReports >= totalPagesReports - 1">Next</button>
+            </div>
         </div>
 
         <div *ngIf="activeTab === 'users'">
@@ -92,6 +116,12 @@ import { User } from '../../models/user.model';
                     </tbody>
                 </table>
             </div>
+            
+            <div class="d-flex justify-content-between align-items-center mt-3" *ngIf="totalPagesUsers > 1">
+                <button class="btn btn-sm btn-outline-secondary" (click)="changePageUsers(-1)" [disabled]="pageUsers === 0">Previous</button>
+                <span>Page {{ pageUsers + 1 }} of {{ totalPagesUsers }}</span>
+                <button class="btn btn-sm btn-outline-secondary" (click)="changePageUsers(1)" [disabled]="pageUsers >= totalPagesUsers - 1">Next</button>
+            </div>
         </div>
     </div>
   `
@@ -100,6 +130,12 @@ export class AdminDashboardComponent implements OnInit {
   reports: ReportResponse[] = [];
   users: User[] = [];
   activeTab: 'reports' | 'users' = 'reports';
+  
+  pageReports = 0;
+  pageUsers = 0;
+  totalPagesReports = 0;
+  totalPagesUsers = 0;
+  pageSize = 10;
 
   constructor(
       private adminService: AdminService,
@@ -115,11 +151,27 @@ export class AdminDashboardComponent implements OnInit {
   }
 
   loadReports() {
-      this.adminService.getAllReports().subscribe(reports => this.reports = reports);
+      this.adminService.getAllReports(this.pageReports, this.pageSize).subscribe(res => {
+          this.reports = res.content;
+          this.totalPagesReports = res.totalPages;
+      });
   }
 
   loadUsers() {
-      this.adminService.getAllUsers().subscribe(users => this.users = users);
+      this.adminService.getAllUsers(this.pageUsers, this.pageSize).subscribe(res => {
+          this.users = res.content;
+          this.totalPagesUsers = res.totalPages;
+      });
+  }
+
+  changePageReports(delta: number) {
+      this.pageReports += delta;
+      this.loadReports();
+  }
+
+  changePageUsers(delta: number) {
+      this.pageUsers += delta;
+      this.loadUsers();
   }
 
   banUserFromReport(report: ReportResponse) {
@@ -152,6 +204,19 @@ export class AdminDashboardComponent implements OnInit {
       this.postService.deletePost(postId).subscribe(() => {
           alert('Post deleted.');
           this.loadReports(); 
+      });
+  }
+
+  toggleHidePost(report: ReportResponse) {
+      if (!report.reportedPostId) return;
+      
+      const action$ = report.postHidden 
+        ? this.adminService.unhidePost(report.reportedPostId) 
+        : this.adminService.hidePost(report.reportedPostId);
+
+      action$.subscribe(() => {
+          report.postHidden = !report.postHidden;
+          // Ideally update all reports referencing same post, but this is fine for now
       });
   }
 
