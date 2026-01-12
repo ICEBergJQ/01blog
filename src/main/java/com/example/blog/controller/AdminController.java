@@ -1,5 +1,6 @@
 package com.example.blog.controller;
 
+import com.example.blog.dto.CursorResponse;
 import com.example.blog.dto.PageResponse;
 import com.example.blog.dto.ReportResponse;
 import com.example.blog.service.AdminService;
@@ -17,11 +18,11 @@ public class AdminController {
     private final AdminService adminService;
 
     @GetMapping("/reports")
-    public ResponseEntity<PageResponse<ReportResponse>> getAllReports(
-            @RequestParam(defaultValue = "0") int page,
+    public ResponseEntity<CursorResponse<ReportResponse>> getAllReports(
+            @RequestParam(required = false) Long cursor,
             @RequestParam(defaultValue = "10") int size
     ) {
-        return ResponseEntity.ok(adminService.getAllReports(page, size));
+        return ResponseEntity.ok(adminService.getAllReports(cursor, size));
     }
 
     @GetMapping("/users")

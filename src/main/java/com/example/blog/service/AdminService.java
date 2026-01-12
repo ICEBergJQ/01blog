@@ -2,8 +2,10 @@ package com.example.blog.service;
 
 import com.example.blog.dto.PageResponse;
 import com.example.blog.dto.ReportResponse;
+import com.example.blog.dto.CursorResponse;
 import com.example.blog.model.Report;
 import com.example.blog.model.User;
+import com.example.blog.repository.PostRepository;
 import com.example.blog.repository.ReportRepository;
 import com.example.blog.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -20,7 +22,7 @@ public class AdminService {
 
     private final UserRepository userRepository;
     private final ReportRepository reportRepository;
-    private final com.example.blog.repository.PostRepository postRepository;
+    private final PostRepository postRepository;
 
     public PageResponse<com.example.blog.dto.UserResponse> getAllUsers(int page, int size) {
         Page<User> usersPage = userRepository.findAll(PageRequest.of(page, size));
@@ -43,14 +45,22 @@ public class AdminService {
         return new PageResponse<>(content, usersPage.getNumber(), usersPage.getSize(), usersPage.getTotalElements(), usersPage.getTotalPages(), usersPage.isLast());
     }
 
-    public PageResponse<ReportResponse> getAllReports(int page, int size) {
-        Page<Report> reportsPage = reportRepository.findAllByOrderByTimestampDesc(PageRequest.of(page, size));
+    public CursorResponse<ReportResponse> getAllReports(Long cursor, int size) {
+        org.springframework.data.domain.Pageable pageable = PageRequest.of(0, size + 1);
+        List<Report> reports = reportRepository.findAllReportsCursor(cursor, pageable);
         
-        List<ReportResponse> content = reportsPage.getContent().stream()
+        boolean hasMore = reports.size() > size;
+        if (hasMore) {
+            reports.remove(reports.size() - 1);
+        }
+        
+        List<ReportResponse> content = reports.stream()
                 .map(this::mapToResponse)
                 .collect(Collectors.toList());
                 
-        return new PageResponse<>(content, reportsPage.getNumber(), reportsPage.getSize(), reportsPage.getTotalElements(), reportsPage.getTotalPages(), reportsPage.isLast());
+        Long nextCursor = content.isEmpty() ? null : content.get(content.size() - 1).getId();
+        
+        return new CursorResponse<>(content, nextCursor, hasMore);
     }
 
     public void banUser(Long userId) {

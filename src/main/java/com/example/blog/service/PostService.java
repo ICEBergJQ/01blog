@@ -1,6 +1,6 @@
 package com.example.blog.service;
 
-import com.example.blog.dto.PageResponse;
+import com.example.blog.dto.CursorResponse;
 import com.example.blog.dto.PostRequest;
 import com.example.blog.dto.PostResponse;
 import com.example.blog.model.Post;
@@ -8,9 +8,8 @@ import com.example.blog.model.User;
 import com.example.blog.repository.PostRepository;
 import com.example.blog.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Sort;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
@@ -39,36 +38,36 @@ public class PostService {
         return mapToResponse(savedPost);
     }
 
-    public PageResponse<PostResponse> getAllPosts(String requestingUsername, int page, int size) {
+    public CursorResponse<PostResponse> getAllPosts(String requestingUsername, Long cursor, int size) {
         User requester = userRepository.findByUsername(requestingUsername)
                 .orElseThrow(() -> new UsernameNotFoundException("User not found"));
         
-        PageRequest pageRequest = PageRequest.of(page, size);
-        Page<Post> postsPage;
+        Pageable pageable = PageRequest.of(0, size + 1);
+        List<Post> posts;
         
         if (requester.getRole().name().equals("ADMIN")) {
-            postsPage = postRepository.findAllByOrderByTimestampDesc(pageRequest);
+            posts = postRepository.findAllPostsCursor(cursor, pageable);
         } else {
-            postsPage = postRepository.findAllVisibleByOrderByTimestampDesc(pageRequest);
+            posts = postRepository.findVisiblePostsCursor(cursor, pageable);
         }
 
-        List<PostResponse> content = postsPage.getContent().stream()
-                .map(this::mapToResponse)
-                .collect(Collectors.toList());
-                
-        return new PageResponse<>(content, postsPage.getNumber(), postsPage.getSize(), postsPage.getTotalElements(), postsPage.getTotalPages(), postsPage.isLast());
+        return buildCursorResponse(posts, size);
     }
 
     @org.springframework.transaction.annotation.Transactional(readOnly = true)
-    public List<PostResponse> getPostsByUser(Long userId, String requestingUsername) {
+    public CursorResponse<PostResponse> getPostsByUser(Long userId, String requestingUsername, Long cursor, int size) {
         User requester = userRepository.findByUsername(requestingUsername)
                 .orElseThrow(() -> new UsernameNotFoundException("User not found"));
         boolean isAdmin = requester.getRole().name().equals("ADMIN");
 
-        return postRepository.findByUserIdOrderByTimestampDesc(userId).stream()
-                .filter(post -> !post.isHidden() || isAdmin || post.getUser().getId().equals(requester.getId()))
-                .map(this::mapToResponse)
-                .collect(Collectors.toList());
+        Pageable pageable = PageRequest.of(0, size + 1);
+        List<Post> posts = postRepository.findUserPostsCursor(userId, cursor, pageable);
+        
+        if (!isAdmin) {
+             posts = posts.stream().filter(p -> !p.isHidden()).collect(Collectors.toList());
+        }
+
+        return buildCursorResponse(posts, size);
     }
 
     public void deletePost(Long postId, String username) {
@@ -110,6 +109,21 @@ public class PostService {
         
         Post savedPost = postRepository.save(post);
         return mapToResponse(savedPost);
+    }
+
+    private CursorResponse<PostResponse> buildCursorResponse(List<Post> posts, int size) {
+        boolean hasMore = posts.size() > size;
+        if (hasMore) {
+            posts.remove(posts.size() - 1);
+        }
+        
+        List<PostResponse> content = posts.stream()
+                .map(this::mapToResponse)
+                .collect(Collectors.toList());
+        
+        Long nextCursor = content.isEmpty() ? null : content.get(content.size() - 1).getId();
+        
+        return new CursorResponse<>(content, nextCursor, hasMore);
     }
 
     private PostResponse mapToResponse(Post post) {

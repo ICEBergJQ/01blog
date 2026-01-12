@@ -13,11 +13,15 @@ import java.util.List;
 public interface PostRepository extends JpaRepository<Post, Long> {
     List<Post> findByUserIdOrderByTimestampDesc(Long userId);
     
-    @Query("SELECT p FROM Post p WHERE p.hidden = false ORDER BY p.timestamp DESC")
-    Page<Post> findAllVisibleByOrderByTimestampDesc(Pageable pageable);
+    @Query("SELECT p FROM Post p WHERE (:cursor IS NULL OR p.id < :cursor) AND p.hidden = false ORDER BY p.id DESC")
+    List<Post> findVisiblePostsCursor(Long cursor, Pageable pageable);
 
-    Page<Post> findAllByOrderByTimestampDesc(Pageable pageable);
-    
+    @Query("SELECT p FROM Post p WHERE (:cursor IS NULL OR p.id < :cursor) ORDER BY p.id DESC")
+    List<Post> findAllPostsCursor(Long cursor, Pageable pageable);
+
+    @Query("SELECT p FROM Post p WHERE p.user.id = :userId AND (:cursor IS NULL OR p.id < :cursor) ORDER BY p.id DESC")
+    List<Post> findUserPostsCursor(Long userId, Long cursor, Pageable pageable);
+
     int countByUserId(Long userId);
     
     int countByUserIdAndHiddenFalse(Long userId);
