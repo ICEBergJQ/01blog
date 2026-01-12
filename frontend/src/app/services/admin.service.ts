@@ -14,9 +14,14 @@ export interface ReportResponse {
     postHidden?: boolean;
 }
 
-import { PageResponse } from './post.service';
-
-// ...
+export interface PageResponse<T> {
+    content: T[];
+    page: number;
+    size: number;
+    totalElements: number;
+    totalPages: number;
+    last: boolean;
+}
 
 @Injectable({
   providedIn: 'root'
@@ -26,8 +31,9 @@ export class AdminService {
 
   constructor(private http: HttpClient) {}
 
-  getAllReports(page: number = 0, size: number = 10): Observable<PageResponse<ReportResponse>> {
-    return this.http.get<PageResponse<ReportResponse>>(`${this.apiUrl}/reports?page=${page}&size=${size}`);
+  getAllReports(cursor: number | null = null, size: number = 10): Observable<any> {
+    const url = cursor ? `${this.apiUrl}/reports?cursor=${cursor}&size=${size}` : `${this.apiUrl}/reports?size=${size}`;
+    return this.http.get<any>(url);
   }
 
   getAllUsers(page: number = 0, size: number = 10): Observable<PageResponse<User>> {
