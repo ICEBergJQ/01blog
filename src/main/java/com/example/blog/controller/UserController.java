@@ -1,8 +1,6 @@
 package com.example.blog.controller;
 
 import com.example.blog.dto.UserResponse;
-import com.example.blog.model.User;
-import com.example.blog.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -14,9 +12,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class UserController {
 
-    private final UserRepository userRepository;
     private final com.example.blog.service.UserService userService;
-    private final com.example.blog.repository.PostRepository postRepository;
 
     @GetMapping("/search")
     public ResponseEntity<List<UserResponse>> searchUsers(@RequestParam String query) {
