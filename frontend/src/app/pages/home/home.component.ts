@@ -1,20 +1,21 @@
 import { Component, OnInit, Inject, PLATFORM_ID } from '@angular/core';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { RouterModule } from '@angular/router'; // Added import
+import { RouterModule } from '@angular/router'; 
 import { PostService } from '../../services/post.service';
 import { FileService } from '../../services/file.service';
 import { Post } from '../../models/post.model';
 import { AuthService } from '../../services/auth.service';
 import { PostCardComponent } from '../../components/post-card/post-card.component';
 import { User } from '../../models/user.model';
+import { ToastService } from '../../services/toast.service';
 
 @Component({
   selector: 'app-home',
   standalone: true,
   imports: [CommonModule, FormsModule, PostCardComponent, RouterModule],
   template: `
-    <div class="container-fluid px-lg-5"> <!-- Use container-fluid with side padding for wider look, removing excessive top margin -->
+    <div class="container-fluid px-lg-5">
       <div class="row g-4 pt-3">
         <!-- Left Sidebar: Profile Snippet -->
         <div class="col-lg-3 d-none d-lg-block">
@@ -110,7 +111,7 @@ export class HomeComponent implements OnInit {
   uploadedMediaType: string = 'NONE';
   isUploading = false;
   
-  currentPage = 0;
+  nextCursor: number | null = null;
   pageSize = 10;
   hasMore = true;
   isLoadingPosts = false;
@@ -119,6 +120,7 @@ export class HomeComponent implements OnInit {
       private postService: PostService,
       private authService: AuthService,
       private fileService: FileService,
+      private toastService: ToastService,
       @Inject(PLATFORM_ID) private platformId: Object
   ) {}
 
@@ -137,15 +139,50 @@ export class HomeComponent implements OnInit {
       if (this.isLoadingPosts) return;
       this.isLoadingPosts = true;
       
-      this.postService.getAllPosts(this.currentPage, this.pageSize).subscribe(res => {
-          this.posts = [...this.posts, ...res.content];
-          this.hasMore = !res.last;
-          this.currentPage++;
-          this.isLoadingPosts = false;
+      this.postService.getAllPosts(this.nextCursor, this.pageSize).subscribe({
+          next: (res) => {
+              this.posts = [...this.posts, ...res.content];
+              this.hasMore = res.hasMore;
+              this.nextCursor = res.nextCursor;
+              this.isLoadingPosts = false;
+          },
+          error: () => {
+              this.isLoadingPosts = false;
+              this.toastService.show('Failed to load posts', 'error');
+          }
       });
   }
 
-  // ... (onFileSelected, createPost etc)
+  onFileSelected(event: any) {
+      const file: File = event.target.files[0];
+      if (file) {
+          this.selectedFile = file;
+          
+          const reader = new FileReader();
+          reader.onload = (e: any) => {
+              this.uploadedFileUrl = e.target.result;
+              if (file.type.startsWith('image/')) this.uploadedMediaType = 'IMAGE';
+              else if (file.type.startsWith('video/')) this.uploadedMediaType = 'VIDEO';
+          };
+          reader.readAsDataURL(file);
+
+          this.isUploading = true;
+          this.fileService.uploadFile(file).subscribe({
+              next: (response) => {
+                  this.uploadedFileUrl = 'http://localhost:8080' + response.fileUrl;
+                  this.isUploading = false;
+                  this.toastService.show('Media uploaded', 'success');
+              },
+              error: () => {
+                  this.toastService.show('File upload failed', 'error');
+                  this.isUploading = false;
+                  this.selectedFile = null;
+                  this.uploadedFileUrl = null;
+                  this.uploadedMediaType = 'NONE';
+              }
+          });
+      }
+  }
 
   createPost() {
       if (!this.newPostContent.trim() && !this.uploadedFileUrl) return;
@@ -156,12 +193,16 @@ export class HomeComponent implements OnInit {
           mediaType: this.uploadedMediaType === 'NONE' ? null : this.uploadedMediaType
       };
 
-      this.postService.createPost(postData).subscribe(post => {
-          this.posts.unshift(post); // Add new post to top
-          this.newPostContent = '';
-          this.selectedFile = null;
-          this.uploadedFileUrl = null;
-          this.uploadedMediaType = 'NONE';
+      this.postService.createPost(postData).subscribe({
+          next: (post) => {
+              this.posts.unshift(post);
+              this.newPostContent = '';
+              this.selectedFile = null;
+              this.uploadedFileUrl = null;
+              this.uploadedMediaType = 'NONE';
+              this.toastService.show('Post created successfully', 'success');
+          },
+          error: () => this.toastService.show('Failed to create post', 'error')
       });
   }
 

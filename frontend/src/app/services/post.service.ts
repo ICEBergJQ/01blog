@@ -3,13 +3,10 @@ import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { Post } from '../models/post.model';
 
-export interface PageResponse<T> {
+export interface CursorResponse<T> {
     content: T[];
-    page: number;
-    size: number;
-    totalElements: number;
-    totalPages: number;
-    last: boolean;
+    nextCursor: number | null;
+    hasMore: boolean;
 }
 
 @Injectable({
@@ -20,12 +17,14 @@ export class PostService {
 
   constructor(private http: HttpClient) {}
 
-  getAllPosts(page: number = 0, size: number = 10): Observable<PageResponse<Post>> {
-    return this.http.get<PageResponse<Post>>(`${this.apiUrl}?page=${page}&size=${size}`);
+  getAllPosts(cursor: number | null = null, size: number = 10): Observable<CursorResponse<Post>> {
+    const url = cursor ? `${this.apiUrl}?cursor=${cursor}&size=${size}` : `${this.apiUrl}?size=${size}`;
+    return this.http.get<CursorResponse<Post>>(url);
   }
 
-  getUserPosts(userId: number): Observable<Post[]> {
-    return this.http.get<Post[]>(`${this.apiUrl}/user/${userId}`);
+  getUserPosts(userId: number, cursor: number | null = null, size: number = 10): Observable<CursorResponse<Post>> {
+    const url = cursor ? `${this.apiUrl}/user/${userId}?cursor=${cursor}&size=${size}` : `${this.apiUrl}/user/${userId}?size=${size}`;
+    return this.http.get<CursorResponse<Post>>(url);
   }
 
   createPost(post: any): Observable<Post> {
