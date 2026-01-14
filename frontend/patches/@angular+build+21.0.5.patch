@@ -1,0 +1,15 @@
+diff --git a/node_modules/@angular/build/src/tools/vite/middlewares/host-check-middleware.js b/node_modules/@angular/build/src/tools/vite/middlewares/host-check-middleware.js
+index 42b9029..0339905 100755
+--- a/node_modules/@angular/build/src/tools/vite/middlewares/host-check-middleware.js
++++ b/node_modules/@angular/build/src/tools/vite/middlewares/host-check-middleware.js
+@@ -15,6 +15,10 @@ function patchHostValidationMiddleware(middlewares) {
+     }
+     const originalHandle = entry.handle;
+     entry.handle = function angularHostValidationMiddleware(req, res, next) {
++
++      if (req.url && req.url.startsWith('//')) {
++            req.url = req.url.replace(/^\/+/, '/');
++        }
+         originalHandle(req, {
+             writeHead: (code) => {
+                 res.writeHead(code, { 'content-type': 'text/html' });
