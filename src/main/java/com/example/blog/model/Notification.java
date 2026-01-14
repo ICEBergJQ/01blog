@@ -26,6 +26,9 @@ public class Notification {
     @Column(name = "is_read")
     private boolean read = false;
 
+    @Enumerated(EnumType.STRING)
+    private NotificationType type;
+
     private LocalDateTime timestamp;
 
     @ManyToOne(fetch = FetchType.LAZY)

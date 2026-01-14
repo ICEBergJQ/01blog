@@ -83,6 +83,11 @@ public class PostService {
         if (!isOwner && !isAdmin) {
             throw new RuntimeException("You can only delete your own posts");
         }
+        
+        if (post.isHidden() && !isAdmin) {
+            throw new RuntimeException("You cannot delete a hidden post");
+        }
+        
         postRepository.delete(post);
     }
 
@@ -92,6 +97,10 @@ public class PostService {
 
         if (!post.getUser().getUsername().equals(username)) {
             throw new RuntimeException("You can only edit your own posts");
+        }
+        
+        if (post.isHidden()) {
+            throw new RuntimeException("You cannot edit a hidden post");
         }
 
         String newContent = request.getContent();

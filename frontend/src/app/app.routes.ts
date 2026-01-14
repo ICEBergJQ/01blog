@@ -4,6 +4,7 @@ import { RegisterComponent } from './pages/register/register.component';
 import { HomeComponent } from './pages/home/home.component';
 import { ProfileComponent } from './pages/profile/profile.component';
 import { AdminDashboardComponent } from './pages/admin-dashboard/admin-dashboard.component';
+import { ErrorComponent } from './pages/error/error.component';
 import { authGuard, guestGuard } from './guards/auth.guard';
 
 export const routes: Routes = [
@@ -12,5 +13,10 @@ export const routes: Routes = [
     { path: '', component: HomeComponent, canActivate: [authGuard] },
     { path: 'profile/:id', component: ProfileComponent, canActivate: [authGuard] },
     { path: 'admin', component: AdminDashboardComponent, canActivate: [authGuard] },
-    { path: '**', redirectTo: '' }
+    { path: 'error', component: ErrorComponent },
+    { 
+        path: '**', 
+        component: ErrorComponent, 
+        data: { status: 404, text: 'Page not found', message: "The page you’re looking for doesn’t exist." } 
+    }
 ];

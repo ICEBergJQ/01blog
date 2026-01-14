@@ -263,15 +263,17 @@ export class ProfileComponent implements OnInit {
 
   reportUser() {
       let reason = prompt('Why are you reporting this user? (Max 500 chars)');
-      if (reason && this.user) {
-          if (reason.length > 500) reason = reason.substring(0, 500);
+      if (reason && reason.trim() && this.user) {
+          const trimmedReason = reason.trim().substring(0, 500);
           this.reportService.submitReport({
-              reason,
+              reason: trimmedReason,
               reportedUserId: this.user.id
           }).subscribe({
               next: () => this.toastService.show('Report submitted', 'success'),
               error: () => this.toastService.show('Failed to submit report', 'error')
           });
+      } else if (reason !== null) {
+          this.toastService.show('Report reason cannot be empty', 'warning');
       }
   }
 

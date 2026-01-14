@@ -5,6 +5,7 @@ import { Observable, BehaviorSubject } from 'rxjs';
 export interface Notification {
     id: number;
     message: string;
+    type: 'LIKE' | 'COMMENT' | 'FOLLOW';
     isRead: boolean;
     timestamp: string;
 }

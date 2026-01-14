@@ -1,5 +1,6 @@
 package com.example.blog.dto;
 
+import com.example.blog.model.NotificationType;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -15,6 +16,7 @@ import java.time.LocalDateTime;
 public class NotificationResponse {
     private Long id;
     private String message;
+    private NotificationType type;
     
     @JsonProperty("isRead")
     private boolean isRead;

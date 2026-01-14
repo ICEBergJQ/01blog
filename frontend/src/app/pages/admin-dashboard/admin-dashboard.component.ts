@@ -178,7 +178,7 @@ import { ToastService } from '../../services/toast.service';
                  I need to either implement offset for admin posts or use Load More here.
                  Using Load More here to be consistent with PostService.
             -->
-            <div class="text-center mt-3" *ngIf="hasMorePosts">
+            <div class="text-center mt-3" *ngIf="hasMorePosts && allPosts.length > 0">
                 <button class="btn btn-outline-secondary" (click)="loadAllPosts()" [disabled]="isLoadingPosts">
                     {{ isLoadingPosts ? 'Loading...' : 'Load More' }}
                 </button>

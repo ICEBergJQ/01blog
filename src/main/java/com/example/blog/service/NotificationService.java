@@ -34,6 +34,7 @@ public class NotificationService {
         Notification notification = Notification.builder()
                 .user(recipient)
                 .message(message)
+                .type(type)
                 .build();
         notificationRepository.save(notification);
     }

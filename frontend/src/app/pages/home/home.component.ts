@@ -74,7 +74,7 @@ import { ToastService } from '../../services/toast.service';
                 <p>The dojo is quiet. Be the first to speak.</p>
             </div>
             
-            <div class="text-center mt-4" *ngIf="hasMore">
+            <div class="text-center mt-4" *ngIf="hasMore && posts.length > 0">
                 <button class="btn btn-outline-secondary" (click)="loadPosts()" [disabled]="isLoadingPosts">
                     {{ isLoadingPosts ? 'Loading...' : 'Load More' }}
                 </button>

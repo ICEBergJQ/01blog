@@ -46,6 +46,7 @@ public class NotificationController {
         return NotificationResponse.builder()
                 .id(notification.getId())
                 .message(notification.getMessage())
+                .type(notification.getType())
                 .isRead(notification.isRead())
                 .timestamp(notification.getTimestamp())
                 .build();

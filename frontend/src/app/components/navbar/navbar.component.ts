@@ -12,6 +12,80 @@ import { ToastService } from '../../services/toast.service';
   selector: 'app-navbar',
   standalone: true,
   imports: [CommonModule, RouterModule, FormsModule],
+  styles: [`
+    .notification-dropdown {
+        width: 350px;
+        max-height: 500px;
+        overflow-y: auto;
+        padding: 0;
+        border: 1px solid #ddd;
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+        scrollbar-width: thin;
+    }
+    .notification-dropdown::-webkit-scrollbar {
+        width: 6px;
+    }
+    .notification-dropdown::-webkit-scrollbar-track {
+        background: #f1f1f1;
+    }
+    .notification-dropdown::-webkit-scrollbar-thumb {
+        background: #888;
+        border-radius: 10px;
+    }
+    .notification-header {
+        padding: 1rem;
+        background-color: #fff;
+        border-bottom: 2px solid #eee;
+        font-weight: 700;
+        color: #222;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    .notification-item {
+        padding: 1rem;
+        border-bottom: 1px solid #f1f3f5;
+        white-space: normal;
+        display: flex;
+        gap: 12px;
+        transition: background-color 0.2s;
+    }
+    .notification-item:hover {
+        background-color: #f8f9fa;
+    }
+    .notification-item.unread {
+        background-color: #f0f7ff;
+        border-left: 4px solid #0d6efd;
+    }
+    .notif-icon-circle {
+        width: 40px;
+        height: 40px;
+        min-width: 40px;
+        border-radius: 50%;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        font-size: 1.2rem;
+    }
+    .bg-like { background-color: #ffebee; color: #d32f2f; }
+    .bg-comment { background-color: #e8f5e green; color: #2e7d32; }
+    .bg-follow { background-color: #e3f2fd; color: #1565c0; }
+    .notif-content { flex-grow: 1; }
+    .notif-msg { font-size: 0.9rem; color: #333; display: block; margin-bottom: 4px; }
+    .notif-meta { display: flex; justify-content: space-between; align-items: center; }
+    .notif-time { font-size: 0.75rem; color: #888; }
+    .btn-mark {
+        font-size: 0.75rem;
+        padding: 2px 8px;
+        border-radius: 4px;
+        background-color: transparent;
+        border: 1px solid #ddd;
+        color: #666;
+    }
+    .btn-mark.unread-btn { border-color: #0d6efd; color: #0d6efd; }
+  `],
   template: `
     <nav class="navbar navbar-expand-lg navbar-dark sticky-top" style="background-color: #4a4a4a !important; border-bottom: 1px solid #666; z-index: 1030;">
       <div class="container">
@@ -30,9 +104,9 @@ import { ToastService } from '../../services/toast.service';
                         <span class="input-group-text bg-white border-end-0 rounded-start-pill text-muted border-secondary">
                             <i class="bi bi-search"></i>
                         </span>
-                        <input class="form-control border-start-0 rounded-end-pill bg-white shadow-none border-secondary" type="search" placeholder="Search..." aria-label="Search" [(ngModel)]="searchQuery" name="searchQuery" (input)="onSearchInput()" autocomplete="off" style="width: 200px;">
+                        <input class="form-control border-start-0 rounded-end-pill bg-white shadow-none border-secondary" type="search" placeholder="Search..." aria-label="Search" [(ngModel)]="searchQuery" name="searchQuery" (input)="onSearchInput()" autocomplete="off" style="width: 180px; transition: width 0.3s ease;">
                     </div>
-                    <div class="dropdown-menu show shadow-sm border-0 mt-1" *ngIf="searchResults.length > 0" style="position: absolute; top: 100%; right: 0; min-width: 250px; z-index: 1050;">
+                    <div class="dropdown-menu show shadow-lg border-0 rounded-3 mt-2" *ngIf="searchResults.length > 0" style="position: absolute; top: 100%; right: 0; min-width: 250px; z-index: 1050;">
                         <button class="dropdown-item d-flex align-items-center" *ngFor="let user of searchResults" (click)="goToUserProfile(user.id)">
                             <img [src]="user.profilePictureUrl ? 'http://localhost:8080' + user.profilePictureUrl : 'assets/default-avatar.png'" class="rounded-circle me-2" style="width: 24px; height: 24px; object-fit: cover;">
                             <span>{{ user.username }}</span>
@@ -49,19 +123,39 @@ import { ToastService } from '../../services/toast.service';
               <li class="nav-item dropdown">
                   <a class="nav-link dropdown-toggle position-relative" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" (click)="loadNotifications()">
                     <i class="bi bi-bell-fill"></i> 
-                    <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style="font-size: 0.6rem;" *ngIf="unreadCount > 0">
+                    <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger border border-light" style="font-size: 0.6rem; padding: 0.25em 0.4em;" *ngIf="unreadCount > 0">
                         {{ unreadCount }}
                     </span>
                   </a>
                   <div class="dropdown-menu dropdown-menu-end notification-dropdown" aria-labelledby="navbarDropdown">
-                    <div class="notification-header">Notifications</div>
-                    <div *ngIf="notifications.length === 0" class="p-3 text-center text-muted">No notifications</div>
+                    <div class="notification-header">
+                        <span>Notifications</span>
+                        <span class="badge bg-primary rounded-pill" style="font-size: 0.7rem;">{{ unreadCount }} New</span>
+                    </div>
+                    <div *ngIf="notifications.length === 0" class="p-4 text-center text-muted">
+                        <i class="bi bi-bell-slash fs-2 d-block mb-2"></i>
+                        No notifications yet
+                    </div>
                     <div *ngFor="let notif of notifications" class="notification-item" [class.unread]="!notif.isRead">
-                        <span class="mb-1">{{ notif.message }}</span>
-                        <div class="notif-meta">
-                            <span class="notif-time">{{ notif.timestamp | date:'short' }}</span>
-                            <button *ngIf="!notif.isRead" class="btn btn-link btn-mark" (click)="toggleRead($event, notif)">Mark Read</button>
-                            <button *ngIf="notif.isRead" class="btn btn-link btn-mark text-muted" (click)="toggleRead($event, notif)">Mark Unread</button>
+                        <div class="notif-icon-circle" [ngClass]="{
+                            'bg-like': notif.type === 'LIKE',
+                            'bg-comment': notif.type === 'COMMENT',
+                            'bg-follow': notif.type === 'FOLLOW'
+                        }">
+                            <i class="bi" [ngClass]="{
+                                'bi-heart-fill': notif.type === 'LIKE',
+                                'bi-chat-dots-fill': notif.type === 'COMMENT',
+                                'bi-person-plus-fill': notif.type === 'FOLLOW'
+                            }"></i>
+                        </div>
+                        <div class="notif-content">
+                            <span class="notif-msg">{{ notif.message }}</span>
+                            <div class="notif-meta">
+                                <span class="notif-time">{{ notif.timestamp | date:'short' }}</span>
+                                <button class="btn-mark" [class.unread-btn]="!notif.isRead" (click)="toggleRead($event, notif)">
+                                    {{ notif.isRead ? 'Mark Unread' : 'Mark Read' }}
+                                </button>
+                            </div>
                         </div>
                     </div>
                   </div>
@@ -131,8 +225,6 @@ export class NavbarComponent implements OnInit {
                   this.updateUnreadCount();
                 },
                 error: () => {
-                   // If token is invalid (e.g. expired), logout or ignore
-                   // this.authService.logout(); // Optional: auto logout
                 }
             });
           } else {
@@ -192,7 +284,6 @@ export class NavbarComponent implements OnInit {
   }
 
   search() {
-      // Optional: Navigate to a dedicated search page
   }
 
   goToUserProfile(userId: number) {

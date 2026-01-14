@@ -57,7 +57,7 @@ import { Router, RouterModule } from '@angular/router';
             <button *ngIf="isAdmin && post.hidden" class="btn btn-sm btn-outline-secondary me-1" (click)="unhidePost()">
                 <i class="bi bi-eye"></i>
             </button>
-            <button *ngIf="isOwner && !isEditing" class="btn btn-sm btn-outline-primary me-1" (click)="enableEdit()">
+            <button *ngIf="isOwner && !isEditing && !post.hidden" class="btn btn-sm btn-outline-primary me-1" (click)="enableEdit()">
                 <i class="bi bi-pencil"></i>
             </button>
             <button *ngIf="canDelete" class="btn btn-sm btn-outline-danger" (click)="deletePost()">
@@ -201,14 +201,13 @@ export class PostCardComponent implements OnInit {
       return snippet + '...';
   }
 
-  get canDelete(): boolean {
-      return this.currentUserId === this.post.userId || this.isAdmin;
-  }
-
-  get isOwner(): boolean {
-      return this.currentUserId === this.post.userId;
-  }
-
+      get canDelete(): boolean {
+        return (this.currentUserId === this.post.userId || this.isAdmin) && (!this.post.hidden || this.isAdmin);
+    }
+  
+    get isOwner(): boolean {
+        return this.currentUserId === this.post.userId;
+    }
   ngOnInit() {
       this.loadLikeStatus();
   }
@@ -266,15 +265,17 @@ export class PostCardComponent implements OnInit {
 
   reportPost() {
       let reason = prompt('Why are you reporting this post? (Max 500 chars)');
-      if (reason) {
-          if (reason.length > 500) reason = reason.substring(0, 500);
+      if (reason && reason.trim()) {
+          const trimmedReason = reason.trim().substring(0, 500);
           this.reportService.submitReport({
-              reason,
+              reason: trimmedReason,
               reportedPostId: this.post.id
           }).subscribe({
               next: () => this.toastService.show('Report submitted', 'success'),
               error: () => this.toastService.show('Failed to submit report', 'error')
           });
+      } else if (reason !== null) {
+          this.toastService.show('Report reason cannot be empty', 'warning');
       }
   }
 
