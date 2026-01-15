@@ -41,9 +41,9 @@ import { ToastService } from '../../services/toast.service';
                     <form (ngSubmit)="createPost()">
                         <textarea class="form-control mb-3" rows="2" placeholder="Share your knowledge... (Max 2000 chars)" [(ngModel)]="newPostContent" name="content" style="resize: none;" maxlength="2000"></textarea>
                         
-                        <div *ngIf="uploadedFileUrl" class="mb-3 position-relative d-inline-block">
-                            <img *ngIf="uploadedMediaType === 'IMAGE'" [src]="uploadedFileUrl" class="rounded" style="max-height: 150px;">
-                            <video *ngIf="uploadedMediaType === 'VIDEO'" [src]="uploadedFileUrl" controls class="rounded" style="max-height: 150px;"></video>
+                        <div *ngIf="uploadedFileUrl" class="mb-3 position-relative d-inline-block" style="max-width: 100%;">
+                            <img *ngIf="uploadedMediaType === 'IMAGE'" [src]="uploadedFileUrl" class="rounded img-fluid" style="max-height: 150px; width: auto;">
+                            <video *ngIf="uploadedMediaType === 'VIDEO'" [src]="uploadedFileUrl" controls class="rounded img-fluid" style="max-height: 150px; width: auto;"></video>
                             <button type="button" class="btn btn-sm btn-danger position-absolute top-0 end-0 rounded-circle" (click)="clearMedia()" style="padding: 0 6px;">&times;</button>
                         </div>
 
