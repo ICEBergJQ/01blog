@@ -15,6 +15,7 @@ public class UserService {
 
     private final UserRepository userRepository;
     private final com.example.blog.repository.PostRepository postRepository;
+    private final FileService fileService;
 
     public UserResponse getUser(Long id, String requestingUsername) {
         User user = userRepository.findById(id)
@@ -40,6 +41,14 @@ public class UserService {
     public void updateProfilePicture(String username, String profilePictureUrl) {
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new RuntimeException("User not found"));
+
+        String oldProfilePictureUrl = user.getProfilePictureUrl();
+        if (oldProfilePictureUrl != null) {
+            String[] urlParts = oldProfilePictureUrl.split("/");
+            String filename = urlParts[urlParts.length - 1];
+            fileService.deleteFile(filename);
+        }
+
         user.setProfilePictureUrl(profilePictureUrl);
         userRepository.save(user);
     }

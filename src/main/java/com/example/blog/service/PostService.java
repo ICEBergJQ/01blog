@@ -22,6 +22,7 @@ public class PostService {
 
     private final PostRepository postRepository;
     private final UserRepository userRepository;
+    private final FileService fileService;
 
     public PostResponse createPost(PostRequest request, String username) {
         User user = userRepository.findByUsername(username)
@@ -87,6 +88,12 @@ public class PostService {
         if (post.isHidden() && !isAdmin) {
             throw new RuntimeException("You cannot delete a hidden post");
         }
+
+        if (post.getMediaUrl() != null) {
+            String[] urlParts = post.getMediaUrl().split("/");
+            String filename = urlParts[urlParts.length - 1];
+            fileService.deleteFile(filename);
+        }
         
         postRepository.delete(post);
     }
@@ -110,11 +117,16 @@ public class PostService {
             throw new RuntimeException("Post must have either text content or media");
         }
 
-        post.setContent(newContent);
-        if (request.getMediaUrl() != null) {
-            post.setMediaUrl(request.getMediaUrl());
-            post.setMediaType(request.getMediaType());
+        // Delete old media if new media is provided
+        if (request.getMediaUrl() != null && !request.getMediaUrl().equals(post.getMediaUrl()) && post.getMediaUrl() != null) {
+            String[] urlParts = post.getMediaUrl().split("/");
+            String filename = urlParts[urlParts.length - 1];
+            fileService.deleteFile(filename);
         }
+
+        post.setContent(newContent);
+        post.setMediaUrl(request.getMediaUrl());
+        post.setMediaType(request.getMediaType());
         
         Post savedPost = postRepository.save(post);
         return mapToResponse(savedPost);

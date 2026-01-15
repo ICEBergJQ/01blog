@@ -1,7 +1,7 @@
 import { Component, OnInit, Inject, PLATFORM_ID } from '@angular/core';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { UserService } from '../../services/user.service';
 import { PostService } from '../../services/post.service';
 import { InteractionService } from '../../services/interaction.service';
@@ -114,6 +114,7 @@ export class ProfileComponent implements OnInit {
     private reportService: ReportService,
     private fileService: FileService,
     private toastService: ToastService,
+    private router: Router,
     @Inject(PLATFORM_ID) private platformId: Object
   ) {}
 
@@ -134,10 +135,15 @@ export class ProfileComponent implements OnInit {
   }
 
   loadProfile(id: number) {
-      this.userService.getUser(id).subscribe(user => {
+      this.userService.getUser(id).subscribe({
+        next: (user) => {
           this.user = user;
           this.updateLocalProfileImageUrl();
           this.checkFollowStatus(id);
+        },
+        error: () => {
+            this.router.navigate(['/not-found']);
+        }
       });
       // Reset posts
       this.posts = [];

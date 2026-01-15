@@ -34,10 +34,11 @@ The project follows a modern **Fullstack** architecture separating concerns betw
 *   **Pagination**:
     *   **Admin Dashboard**: Uses standard **Offset Pagination** (`Page 1, 2, 3`) via `PageRequest` and `PageResponse`.
     *   **Feed (Home/Profile)**: Uses **Cursor-Based Pagination** (`CursorResponse`) where the cursor is the `ID` of the last post. This prevents duplicates when new posts are added while scrolling.
-*   **File Upload**:
+*   **File Upload & Deletion**:
     *   `FileUploadController` receives `MultipartFile`.
     *   **Security**: Uploads are restricted to **authenticated users only**.
     *   **Validation**: Strictly checks MIME types (images/videos only).
+    *   **File Deletion**: A new `FileService` is introduced to handle file deletions. When a post is deleted or a user changes their profile picture, the old file is deleted from the server, preventing orphaned files. The default avatar is never deleted.
 *   **Post Visibility**:
     *   Posts have a `hidden` boolean.
     *   Admins can see everything.
@@ -56,6 +57,7 @@ The project follows a modern **Fullstack** architecture separating concerns betw
 *   **Services**:
     *   `ToastService`: Global notification system (Success/Error popups) replacing native alerts.
     *   `PostService`: Handles cursor pagination (`?cursor=123`).
+*   **Error Handling**: When a user navigates to a non-existent profile, the `ProfileComponent` now catches the error and redirects to a proper "Not Found" page.
 
 ### UX/UI Patterns
 *   **Styles**: We use a **"Modern Dojo"** aesthetic.
@@ -63,6 +65,7 @@ The project follows a modern **Fullstack** architecture separating concerns betw
     *   Grid: 3-Column Layout (Sidebar / Feed / Info).
 *   **Optimistic UI**: When you follow a user, the button toggles *immediately* (and counter updates) while the API call happens in the background.
 *   **Cache Busting**: Profile pictures use a query param (`?t=...`) to force the browser to reload the image when it changes.
+*   **Deferred Upload**: Media files are not uploaded immediately upon selection. They are uploaded only when the user publishes the post, preventing orphaned files on the server.
 
 ---
 
@@ -99,7 +102,7 @@ When a user clicks "Login", here is the exact journey of that data:
 6.  **Controller**: Spring routes the request to `AuthController.authenticate()`.
 7.  **Service**: `AuthService` calls `AuthenticationManager`.
 8.  **Provider**: `DaoAuthenticationProvider` hashes the incoming password (BCrypt) and compares it with the hash in the DB.
-9.  **Response**: If match, a new JWT is generated and sent back JSON.
+9.  **Response**: If match, a new JWT is generated and sent back as JSON.
 
 ### B. Dependency Injection (DI) "Wiring"
 You see `@RequiredArgsConstructor` everywhere. This is **Lombok** generating a constructor.

@@ -157,53 +157,53 @@ export class HomeComponent implements OnInit {
       const file: File = event.target.files[0];
       if (file) {
           this.selectedFile = file;
-          
+          this.uploadedMediaType = file.type.startsWith('image/') ? 'IMAGE' : 'VIDEO';
+
           const reader = new FileReader();
-          reader.onload = (e: any) => {
-              this.uploadedFileUrl = e.target.result;
-              if (file.type.startsWith('image/')) this.uploadedMediaType = 'IMAGE';
-              else if (file.type.startsWith('video/')) this.uploadedMediaType = 'VIDEO';
+          reader.onload = () => {
+              this.uploadedFileUrl = reader.result as string;
           };
           reader.readAsDataURL(file);
-
-          this.isUploading = true;
-          this.fileService.uploadFile(file).subscribe({
-              next: (response) => {
-                  this.uploadedFileUrl = 'http://localhost:8080' + response.fileUrl;
-                  this.isUploading = false;
-                  this.toastService.show('Media uploaded', 'success');
-              },
-              error: () => {
-                  this.toastService.show('File upload failed', 'error');
-                  this.isUploading = false;
-                  this.selectedFile = null;
-                  this.uploadedFileUrl = null;
-                  this.uploadedMediaType = 'NONE';
-              }
-          });
       }
   }
 
   createPost() {
-      if (!this.newPostContent.trim() && !this.uploadedFileUrl) return;
+      if (!this.newPostContent.trim() && !this.selectedFile) return;
 
-      const postData = {
-          content: this.newPostContent,
-          mediaUrl: this.uploadedFileUrl,
-          mediaType: this.uploadedMediaType === 'NONE' ? null : this.uploadedMediaType
+      this.isUploading = true;
+
+      const handlePostCreation = (mediaUrl: string | null, mediaType: string | null) => {
+          const postData = {
+              content: this.newPostContent,
+              mediaUrl: mediaUrl,
+              mediaType: mediaType
+          };
+          this.postService.createPost(postData).subscribe({
+              next: (post) => {
+                  this.posts.unshift(post);
+                  this.resetForm();
+                  this.toastService.show('Post created successfully', 'success');
+              },
+              error: () => {
+                  this.toastService.show('Failed to create post', 'error');
+                  this.isUploading = false;
+              }
+          });
       };
 
-      this.postService.createPost(postData).subscribe({
-          next: (post) => {
-              this.posts.unshift(post);
-              this.newPostContent = '';
-              this.selectedFile = null;
-              this.uploadedFileUrl = null;
-              this.uploadedMediaType = 'NONE';
-              this.toastService.show('Post created successfully', 'success');
-          },
-          error: () => this.toastService.show('Failed to create post', 'error')
-      });
+      if (this.selectedFile) {
+          this.fileService.uploadFile(this.selectedFile).subscribe({
+              next: (response) => {
+                  handlePostCreation('http://localhost:8080' + response.fileUrl, this.uploadedMediaType);
+              },
+              error: () => {
+                  this.toastService.show('File upload failed', 'error');
+                  this.isUploading = false;
+              }
+          });
+      } else {
+          handlePostCreation(null, null);
+      }
   }
 
   onPostDeleted(postId: number) {
@@ -218,5 +218,17 @@ export class HomeComponent implements OnInit {
       this.selectedFile = null;
       this.uploadedFileUrl = null;
       this.uploadedMediaType = 'NONE';
+      const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
+      if (fileInput) {
+          fileInput.value = '';
+      }
+  }
+
+  private resetForm() {
+      this.newPostContent = '';
+      this.selectedFile = null;
+      this.uploadedFileUrl = null;
+      this.uploadedMediaType = 'NONE';
+      this.isUploading = false;
   }
 }
