@@ -38,15 +38,23 @@ public class FileUploadController {
 
     @PostMapping("/upload")
     public ResponseEntity<Map<String, String>> uploadFile(@RequestParam("file") MultipartFile file) {
-        // Validate File Type
-        List<String> allowedTypes = Arrays.asList(
+        return upload(file, Arrays.asList(
             "image/jpeg", "image/png", "image/gif", "image/webp",
             "video/mp4", "video/webm", "video/quicktime"
-        );
-        
+        ), "Only images and videos are allowed.");
+    }
+
+    @PostMapping("/upload-profile-picture")
+    public ResponseEntity<Map<String, String>> uploadProfilePicture(@RequestParam("file") MultipartFile file) {
+        return upload(file, Arrays.asList(
+            "image/jpeg", "image/png", "image/gif", "image/webp"
+        ), "Invalid file type. Only images are allowed for profile pictures.");
+    }
+
+    private ResponseEntity<Map<String, String>> upload(MultipartFile file, List<String> allowedTypes, String errorMessage) {
         String contentType = file.getContentType();
         if (contentType == null || !allowedTypes.contains(contentType)) {
-            throw new RuntimeException("Invalid file type. Only images (JPG, PNG, GIF, WEBP) and videos (MP4, WEBM, MOV) are allowed.");
+            throw new RuntimeException(errorMessage);
         }
 
         String fileName = UUID.randomUUID().toString() + "_" + file.getOriginalFilename();

@@ -211,14 +211,14 @@ export class ProfileComponent implements OnInit {
       const file: File = event.target.files[0];
       if (file) {
           this.isUploading = true;
-          this.fileService.uploadFile(file).subscribe({
+          this.fileService.uploadProfilePicture(file).subscribe({
               next: (res) => {
                   this.updateProfilePicture(res.fileUrl);
                   this.toastService.show('Profile picture updated', 'success');
               },
-              error: () => {
+              error: (err) => {
                   this.isUploading = false;
-                  this.toastService.show('Upload failed', 'error');
+                  this.toastService.show(err.error.message || 'Upload failed', 'error');
               }
           });
       }

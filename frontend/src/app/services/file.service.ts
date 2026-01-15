@@ -15,4 +15,10 @@ export class FileService {
     formData.append('file', file);
     return this.http.post<{fileName: string, fileUrl: string}>(`${this.apiUrl}/upload`, formData);
   }
+
+  uploadProfilePicture(file: File): Observable<{fileName: string, fileUrl: string}> {
+    const formData = new FormData();
+    formData.append('file', file);
+    return this.http.post<{fileName: string, fileUrl: string}>(`${this.apiUrl}/upload-profile-picture`, formData);
+  }
 }
