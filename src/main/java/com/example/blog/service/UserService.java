@@ -42,6 +42,15 @@ public class UserService {
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
+        // Extract new filename to validate its content type before proceeding
+        String[] newUrlParts = profilePictureUrl.split("/");
+        String newFilename = newUrlParts[newUrlParts.length - 1];
+        String contentType = fileService.getFileContentType(newFilename);
+
+        if (contentType == null || !contentType.startsWith("image/")) {
+            throw new RuntimeException("Invalid profile picture file. Only images are allowed.");
+        }
+
         String oldProfilePictureUrl = user.getProfilePictureUrl();
         if (oldProfilePictureUrl != null) {
             String[] urlParts = oldProfilePictureUrl.split("/");

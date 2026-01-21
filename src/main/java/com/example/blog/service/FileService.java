@@ -12,9 +12,22 @@ import java.nio.file.Paths;
 public class FileService {
 
     private final Path fileStorageLocation;
+    private final org.apache.tika.Tika tika = new org.apache.tika.Tika();
 
     public FileService(@Value("${file.upload-dir:uploads}") String uploadDir) {
         this.fileStorageLocation = Paths.get(uploadDir).toAbsolutePath().normalize();
+    }
+
+    public String getFileContentType(String filename) {
+        try {
+            Path filePath = this.fileStorageLocation.resolve(filename).normalize();
+            if (!Files.exists(filePath)) {
+                return null;
+            }
+            return tika.detect(filePath);
+        } catch (IOException e) {
+            return null;
+        }
     }
 
     public void deleteFile(String filename) {
