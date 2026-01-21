@@ -13,7 +13,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class ReportRequest {
     @NotBlank(message = "Reason is required")
-    @Size(max = 500, message = "Reason cannot exceed 500 characters")
+    @Size(max = 100, message = "Reason cannot exceed 100 characters")
     private String reason;
     
     private Long reportedUserId;
