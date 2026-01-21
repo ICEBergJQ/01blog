@@ -18,11 +18,11 @@ import { ToastService } from '../../services/toast.service';
   standalone: true,
   imports: [CommonModule, FormsModule, PostCardComponent],
   template: `
-    <div class="container" *ngIf="user">
+    <div class="container pt-4" *ngIf="user">
         <div class="card mb-4 shadow-sm">
-            <div class="card-body d-flex justify-content-between align-items-center">
-                <div class="d-flex align-items-center">
-                    <div class="position-relative me-3">
+            <div class="card-body d-flex flex-column flex-md-row justify-content-between align-items-center text-center text-md-start">
+                <div class="d-flex flex-column flex-md-row align-items-center mb-3 mb-md-0">
+                    <div class="position-relative me-0 me-md-3 mb-3 mb-md-0">
                         <img [src]="profileImageUrl" 
                              class="rounded-circle" 
                              style="width: 100px; height: 100px; object-fit: cover; cursor: pointer;"
@@ -38,7 +38,7 @@ import { ToastService } from '../../services/toast.service';
                     </div>
                     <div>
                         <h2>{{ user.username }}</h2>
-                        <div class="d-flex gap-3 mb-2 text-muted small">
+                        <div class="d-flex justify-content-center justify-content-md-start gap-3 mb-2 text-muted small">
                             <span><strong>{{ user.postsCount || 0 }}</strong> posts</span>
                             <span><strong>{{ user.followersCount || 0 }}</strong> followers</span>
                             <span><strong>{{ user.followingCount || 0 }}</strong> following</span>
@@ -46,7 +46,7 @@ import { ToastService } from '../../services/toast.service';
                         <p class="text-muted">{{ user.email }}</p> 
                         <span class="badge bg-secondary mb-2">{{ user.role }}</span>
                         
-                        <div *ngIf="!isEditingBio" class="d-flex align-items-center">
+                        <div *ngIf="!isEditingBio" class="d-flex justify-content-center justify-content-md-start align-items-center">
                             <p class="mb-1" *ngIf="user.bio" style="white-space: pre-wrap;">{{ user.bio }}</p>
                             <p class="text-muted fst-italic mb-1" *ngIf="!user.bio">No bio yet.</p>
                             <button *ngIf="isOwner" class="btn btn-sm btn-outline-primary ms-2" (click)="editBio()" title="Edit Bio">
@@ -60,8 +60,8 @@ import { ToastService } from '../../services/toast.service';
                         </div>
                     </div>
                 </div>
-                <div *ngIf="currentUser && currentUser.id !== user.id">
-                    <button class="btn btn-outline-warning me-2" (click)="reportUser()">Report</button>
+                <div *ngIf="currentUser && currentUser.id !== user.id" class="d-flex gap-2">
+                    <button class="btn btn-outline-warning" (click)="reportUser()">Report</button>
                     <button *ngIf="!isFollowing" class="btn btn-primary" (click)="follow()">Follow</button>
                     <button *ngIf="isFollowing" class="btn btn-outline-danger" (click)="unfollow()">Unfollow</button>
                 </div>
@@ -87,6 +87,32 @@ import { ToastService } from '../../services/toast.service';
             </button>
         </div>
     </div>
+
+    <!-- Report Modal -->
+    <div *ngIf="isReportModalOpen">
+        <div class="modal-backdrop fade show" style="background: rgba(0,0,0,0.5); z-index: 2000;"></div>
+        <div class="modal d-block" tabindex="-1" style="z-index: 2050;">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Report User</h5>
+                <button type="button" class="btn-close" (click)="closeReportModal()"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label for="reportReason" class="form-label">Why are you reporting this user?</label>
+                    <textarea class="form-control" id="reportReason" rows="3" [(ngModel)]="reportReason" maxlength="100" placeholder="Max 100 characters..."></textarea>
+                    <div class="text-end text-muted small mt-1">{{ reportReason.length }}/100</div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" (click)="closeReportModal()">Cancel</button>
+                <button type="button" class="btn btn-danger" (click)="submitReport()" [disabled]="!reportReason.trim()">Submit Report</button>
+            </div>
+            </div>
+        </div>
+        </div>
+    </div>
   `
 })
 export class ProfileComponent implements OnInit {
@@ -105,6 +131,10 @@ export class ProfileComponent implements OnInit {
   isLoadingPosts = false;
   pageSize = 5;
 
+  // Report Modal
+  isReportModalOpen = false;
+  reportReason = '';
+
   constructor(
     private route: ActivatedRoute,
     private userService: UserService,
@@ -122,13 +152,16 @@ export class ProfileComponent implements OnInit {
       return this.currentUser?.id === this.user?.id;
   }
 
-  ngOnInit() {
+    ngOnInit() {
     if (isPlatformBrowser(this.platformId)) {
         this.authService.getMe().subscribe(me => this.currentUser = me);
         this.route.paramMap.subscribe(params => {
-            const id = Number(params.get('id'));
-            if (id) {
+            const paramId = params.get('id');
+            const id = Number(paramId);
+            if (!isNaN(id) && id > 0) {
                 this.loadProfile(id);
+            } else {
+                this.router.navigate(['/not-found']);
             }
         });
     }
@@ -141,8 +174,12 @@ export class ProfileComponent implements OnInit {
           this.updateLocalProfileImageUrl();
           this.checkFollowStatus(id);
         },
-        error: () => {
-            this.router.navigate(['/not-found']);
+        error: (err) => {
+            if (err.status === 404) {
+                this.router.navigate(['/not-found']);
+            } else {
+                this.toastService.show('Failed to load profile. Please try again.', 'error');
+            }
         }
       });
       // Reset posts
@@ -210,6 +247,10 @@ export class ProfileComponent implements OnInit {
   onFileSelected(event: any) {
       const file: File = event.target.files[0];
       if (file) {
+          if (file.size > 10 * 1024 * 1024) {
+              this.toastService.show('Profile picture too large. Maximum size is 10MB.', 'warning');
+              return;
+          }
           this.isUploading = true;
           this.fileService.uploadProfilePicture(file).subscribe({
               next: (res) => {
@@ -228,7 +269,6 @@ export class ProfileComponent implements OnInit {
         this.userService.updateProfilePicture(url).subscribe(() => {
             if (this.user) {
                 this.loadProfile(this.user.id);
-                window.location.reload(); 
             }
             this.isUploading = false;
         });
@@ -268,18 +308,27 @@ export class ProfileComponent implements OnInit {
   }
 
   reportUser() {
-      let reason = prompt('Why are you reporting this user? (Max 500 chars)');
-      if (reason && reason.trim() && this.user) {
-          const trimmedReason = reason.trim().substring(0, 500);
+      this.isReportModalOpen = true;
+      this.reportReason = '';
+  }
+
+  closeReportModal() {
+      this.isReportModalOpen = false;
+      this.reportReason = '';
+  }
+
+  submitReport() {
+      if (this.reportReason && this.reportReason.trim() && this.user) {
           this.reportService.submitReport({
-              reason: trimmedReason,
+              reason: this.reportReason.trim(),
               reportedUserId: this.user.id
           }).subscribe({
-              next: () => this.toastService.show('Report submitted', 'success'),
+              next: () => {
+                  this.toastService.show('Report submitted', 'success');
+                  this.closeReportModal();
+              },
               error: () => this.toastService.show('Failed to submit report', 'error')
           });
-      } else if (reason !== null) {
-          this.toastService.show('Report reason cannot be empty', 'warning');
       }
   }
 

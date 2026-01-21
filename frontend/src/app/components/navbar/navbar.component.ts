@@ -85,49 +85,41 @@ import { ToastService } from '../../services/toast.service';
         color: #666;
     }
     .btn-mark.unread-btn { border-color: #0d6efd; color: #0d6efd; }
+    
+    @media (max-width: 576px) {
+        .notification-dropdown {
+            width: 90vw;
+            position: fixed;
+            top: 60px;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+    }
+    
+    @media (min-width: 992px) {
+        .mobile-only { display: none !important; }
+    }
+    @media (max-width: 991.98px) {
+        .desktop-only { display: none !important; }
+    }
   `],
   template: `
-    <nav class="navbar navbar-expand-lg navbar-dark sticky-top" style="background-color: #4a4a4a !important; border-bottom: 1px solid #666; z-index: 1030;">
+    <nav class="navbar navbar-expand-lg navbar-dark sticky-top" style="background-color: #4A6D85 !important; border-bottom: 1px solid rgba(0,0,0,0.1); z-index: 1030;">
       <div class="container">
         <a class="navbar-brand d-flex align-items-center" routerLink="/">
           <img src="assets/logo.png" alt="Dojo Logo" height="40">
         </a>
-        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-          <span class="navbar-toggler-icon"></span>
-        </button>
-        <div class="collapse navbar-collapse" id="navbarNav">
-          <ul class="navbar-nav ms-auto align-items-start align-items-lg-center">
-            <ng-container *ngIf="isBrowser && (authService.currentUser$ | async); else guestLinks">
-              <li class="nav-item me-lg-3 me-0 mb-2 mb-lg-0" *ngIf="currentUser">
-                 <form class="d-flex position-relative align-items-center" (submit)="search()">
-                    <div class="input-group input-group-sm">
-                        <span class="input-group-text bg-white border-end-0 rounded-start-pill text-muted border-secondary">
-                            <i class="bi bi-search"></i>
-                        </span>
-                        <input class="form-control border-start-0 rounded-end-pill bg-white shadow-none border-secondary" type="search" placeholder="Search..." aria-label="Search" [(ngModel)]="searchQuery" name="searchQuery" (input)="onSearchInput()" autocomplete="off" style="width: 180px; transition: width 0.3s ease;">
-                    </div>
-                    <div class="dropdown-menu show shadow-lg border-0 rounded-3 mt-2" *ngIf="searchResults.length > 0" style="position: absolute; top: 100%; right: 0; min-width: 250px; z-index: 1050;">
-                        <button class="dropdown-item d-flex align-items-center" *ngFor="let user of searchResults" (click)="goToUserProfile(user.id)">
-                            <img [src]="user.profilePictureUrl ? 'http://localhost:8080' + user.profilePictureUrl : 'assets/default-avatar.png'" class="rounded-circle me-2" style="width: 24px; height: 24px; object-fit: cover;">
-                            <span>{{ user.username }}</span>
-                        </button>
-                    </div>
-                </form>
-              </li>
-
-              <li class="nav-item">
-                <a class="nav-link d-flex align-items-center" routerLink="/">
-                  <i class="bi bi-house-door-fill me-1"></i> Home
-                </a>
-              </li>
-              <li class="nav-item dropdown">
-                  <a class="nav-link dropdown-toggle position-relative" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" (click)="loadNotifications()">
-                    <i class="bi bi-bell-fill"></i> 
+        
+        <div class="d-flex align-items-center ms-auto mobile-only">
+            <!-- Mobile Notifications (Hidden on large screens) -->
+            <div class="nav-item dropdown me-2 d-lg-none" *ngIf="isBrowser && (authService.currentUser$ | async)">
+                  <a class="nav-link dropdown-toggle position-relative text-white" href="#" id="navbarDropdownMobile" role="button" data-bs-toggle="dropdown" (click)="loadNotifications()">
+                    <i class="bi bi-bell-fill fs-5"></i> 
                     <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger border border-light" style="font-size: 0.6rem; padding: 0.25em 0.4em;" *ngIf="unreadCount > 0">
                         {{ unreadCount }}
                     </span>
                   </a>
-                  <div class="dropdown-menu dropdown-menu-end notification-dropdown" aria-labelledby="navbarDropdown">
+                  <div class="dropdown-menu dropdown-menu-end notification-dropdown" aria-labelledby="navbarDropdownMobile">
                     <div class="notification-header">
                         <span>Notifications</span>
                         <span class="badge bg-primary rounded-pill" style="font-size: 0.7rem;">{{ unreadCount }} New</span>
@@ -159,7 +151,39 @@ import { ToastService } from '../../services/toast.service';
                         </div>
                     </div>
                   </div>
+            </div>
+
+            <button class="navbar-toggler border-0 shadow-none" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+              <span class="navbar-toggler-icon"></span>
+            </button>
+        </div>
+
+        <div class="collapse navbar-collapse" id="navbarNav">
+          <ul class="navbar-nav ms-auto align-items-start align-items-lg-center">
+            <ng-container *ngIf="isBrowser && (authService.currentUser$ | async); else guestLinks">
+              <li class="nav-item me-lg-3 me-0 mb-2 mb-lg-0" *ngIf="currentUser">
+                 <form class="d-flex position-relative align-items-center" (submit)="search()">
+                    <div class="input-group input-group-sm">
+                        <span class="input-group-text bg-white border-end-0 rounded-start-pill text-muted border-secondary">
+                            <i class="bi bi-search"></i>
+                        </span>
+                        <input class="form-control border-start-0 rounded-end-pill bg-white shadow-none border-secondary" type="search" placeholder="Search..." aria-label="Search" [(ngModel)]="searchQuery" name="searchQuery" (input)="onSearchInput()" autocomplete="off" style="width: 180px; transition: width 0.3s ease;">
+                    </div>
+                    <div class="dropdown-menu show shadow-lg border-0 rounded-3 mt-2" *ngIf="searchResults.length > 0" style="position: absolute; top: 100%; right: 0; min-width: 250px; z-index: 1050;">
+                        <button class="dropdown-item d-flex align-items-center" *ngFor="let user of searchResults" (click)="goToUserProfile(user.id)">
+                            <img [src]="user.profilePictureUrl ? 'http://localhost:8080' + user.profilePictureUrl : 'assets/default-avatar.png'" class="rounded-circle me-2" style="width: 24px; height: 24px; object-fit: cover;">
+                            <span>{{ user.username }}</span>
+                        </button>
+                    </div>
+                </form>
               </li>
+
+              <li class="nav-item">
+                <a class="nav-link d-flex align-items-center" routerLink="/">
+                  <i class="bi bi-house-door-fill me-1"></i> Home
+                </a>
+              </li>
+
               <li class="nav-item">
                 <a class="nav-link d-flex align-items-center" href="#" (click)="goToProfile($event)">
                     <img [src]="currentUser?.profilePictureUrl ? 'http://localhost:8080' + currentUser?.profilePictureUrl : 'assets/default-avatar.png'" 
@@ -167,6 +191,48 @@ import { ToastService } from '../../services/toast.service';
                          style="width: 25px; height: 25px; object-fit: cover; border: 1px solid #fff;">
                     My Profile
                 </a>
+              </li>
+              
+              <!-- Desktop Notifications (Hidden on small screens) -->
+              <li class="nav-item dropdown desktop-only">
+                  <a class="nav-link dropdown-toggle position-relative" href="#" id="navbarDropdownDesktop" role="button" data-bs-toggle="dropdown" (click)="loadNotifications()">
+                    <i class="bi bi-bell-fill"></i> 
+                    <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger border border-light" style="font-size: 0.6rem; padding: 0.25em 0.4em;" *ngIf="unreadCount > 0">
+                        {{ unreadCount }}
+                    </span>
+                  </a>
+                  <div class="dropdown-menu dropdown-menu-end notification-dropdown" aria-labelledby="navbarDropdownDesktop">
+                    <div class="notification-header">
+                        <span>Notifications</span>
+                        <span class="badge bg-primary rounded-pill" style="font-size: 0.7rem;">{{ unreadCount }} New</span>
+                    </div>
+                    <div *ngIf="notifications.length === 0" class="p-4 text-center text-muted">
+                        <i class="bi bi-bell-slash fs-2 d-block mb-2"></i>
+                        No notifications yet
+                    </div>
+                    <div *ngFor="let notif of notifications" class="notification-item" [class.unread]="!notif.isRead">
+                        <div class="notif-icon-circle" [ngClass]="{
+                            'bg-like': notif.type === 'LIKE',
+                            'bg-comment': notif.type === 'COMMENT',
+                            'bg-follow': notif.type === 'FOLLOW'
+                        }">
+                            <i class="bi" [ngClass]="{
+                                'bi-heart-fill': notif.type === 'LIKE',
+                                'bi-chat-dots-fill': notif.type === 'COMMENT',
+                                'bi-person-plus-fill': notif.type === 'FOLLOW'
+                            }"></i>
+                        </div>
+                        <div class="notif-content">
+                            <span class="notif-msg">{{ notif.message }}</span>
+                            <div class="notif-meta">
+                                <span class="notif-time">{{ notif.timestamp | date:'short' }}</span>
+                                <button class="btn-mark" [class.unread-btn]="!notif.isRead" (click)="toggleRead($event, notif)">
+                                    {{ notif.isRead ? 'Mark Unread' : 'Mark Read' }}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                  </div>
               </li>
               <li class="nav-item" *ngIf="isAdmin">
                 <a class="nav-link d-flex align-items-center" routerLink="/admin">
