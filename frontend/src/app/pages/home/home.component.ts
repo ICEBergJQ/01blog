@@ -156,8 +156,19 @@ export class HomeComponent implements OnInit {
   onFileSelected(event: any) {
       const file: File = event.target.files[0];
       if (file) {
+          const isImage = file.type.startsWith('image/');
+          const isVideo = file.type.startsWith('video/');
+          const maxSize = isImage ? 20 * 1024 * 1024 : 100 * 1024 * 1024;
+
+          if (file.size > maxSize) {
+              const limitStr = isImage ? '20MB' : '100MB';
+              this.toastService.show(`File too large. Maximum size for ${isImage ? 'images' : 'videos'} is ${limitStr}.`, 'warning');
+              this.clearMedia();
+              return;
+          }
+
           this.selectedFile = file;
-          this.uploadedMediaType = file.type.startsWith('image/') ? 'IMAGE' : 'VIDEO';
+          this.uploadedMediaType = isImage ? 'IMAGE' : 'VIDEO';
 
           const reader = new FileReader();
           reader.onload = () => {

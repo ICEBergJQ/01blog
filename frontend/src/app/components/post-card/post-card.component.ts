@@ -68,16 +68,19 @@ import { Router, RouterModule } from '@angular/router';
       <div class="card-body" [class.opacity-50]="post.hidden">
         <div *ngIf="!isEditing">
             <p class="card-text" style="white-space: pre-wrap;">{{ displayContent }}<a href="#" *ngIf="shouldShowSeeMore" (click)="$event.preventDefault(); isExpanded = !isExpanded" class="text-decoration-none ms-1">{{ isExpanded ? 'See less' : 'See more' }}</a></p>
-            <div *ngIf="post.mediaUrl" class="mb-3">
-                <img [src]="post.mediaUrl" class="img-fluid rounded" alt="Post media" *ngIf="post.mediaType === 'IMAGE'">
-                <video [src]="post.mediaUrl" controls class="img-fluid rounded" *ngIf="post.mediaType === 'VIDEO'"></video>
+            <div *ngIf="post.mediaUrl" class="mb-3 text-center bg-light rounded overflow-hidden">
+                <img [src]="post.mediaUrl" class="img-fluid" alt="Post media" *ngIf="post.mediaType === 'IMAGE'" style="max-height: 450px; object-fit: contain;">
+                <video [src]="post.mediaUrl" controls class="img-fluid" *ngIf="post.mediaType === 'VIDEO'" style="max-height: 450px; width: 100%;"></video>
             </div>
         </div>
         <div *ngIf="isEditing">
-            <textarea class="form-control mb-2" [(ngModel)]="editContent"></textarea>
-            <div class="d-flex justify-content-end gap-2">
-                <button class="btn btn-sm btn-secondary" (click)="cancelEdit()">Cancel</button>
-                <button class="btn btn-sm btn-success" (click)="saveEdit()" [disabled]="!editContent.trim() && !post.mediaUrl">Save</button>
+            <textarea class="form-control mb-2" [(ngModel)]="editContent" maxlength="2000" rows="4"></textarea>
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <small class="text-muted">{{ editContent.length }}/2000 characters</small>
+                <div class="d-flex gap-2">
+                    <button class="btn btn-sm btn-secondary" (click)="cancelEdit()">Cancel</button>
+                    <button class="btn btn-sm btn-success" (click)="saveEdit()" [disabled]="!editContent.trim() && !post.mediaUrl">Save</button>
+                </div>
             </div>
         </div>
         
@@ -123,6 +126,32 @@ import { Router, RouterModule } from '@angular/router';
         </div>
       </div>
     </div>
+
+    <!-- Report Modal moved outside card -->
+    <div *ngIf="isReportModalOpen">
+        <div class="modal-backdrop fade show" style="background: rgba(0,0,0,0.5); z-index: 2000;"></div>
+        <div class="modal d-block" tabindex="-1" style="z-index: 2050;">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Report Post</h5>
+                <button type="button" class="btn-close" (click)="closeReportModal()"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label for="reportReason" class="form-label">Why are you reporting this post?</label>
+                    <textarea class="form-control" id="reportReason" rows="3" [(ngModel)]="reportReason" maxlength="100" placeholder="Max 100 characters..."></textarea>
+                    <div class="text-end text-muted small mt-1">{{ reportReason.length }}/100</div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" (click)="closeReportModal()">Cancel</button>
+                <button type="button" class="btn btn-danger" (click)="submitReport()" [disabled]="!reportReason.trim()">Submit Report</button>
+            </div>
+            </div>
+        </div>
+        </div>
+    </div>
   `
 })
 export class PostCardComponent implements OnInit {
@@ -143,6 +172,10 @@ export class PostCardComponent implements OnInit {
   isExpanded = false;
   readonly contentLimit = 200;
   expandedComments = new Set<number>();
+
+  // Report Modal
+  isReportModalOpen = false;
+  reportReason = '';
 
   constructor(
       private interactionService: InteractionService,
@@ -242,11 +275,11 @@ export class PostCardComponent implements OnInit {
   }
 
   hidePost() {
-      if(!confirm('Hide this post?')) return;
+      if(!confirm('Are you sure you want to hide this post?')) return;
       this.adminService.hidePost(this.post.id).subscribe({
           next: () => {
               this.post.hidden = true;
-              this.toastService.show('Post hidden', 'info');
+              this.toastService.show('Post hidden successfully', 'success');
           },
           error: () => this.toastService.show('Failed to hide post', 'error')
       });
@@ -264,18 +297,27 @@ export class PostCardComponent implements OnInit {
   }
 
   reportPost() {
-      let reason = prompt('Why are you reporting this post? (Max 500 chars)');
-      if (reason && reason.trim()) {
-          const trimmedReason = reason.trim().substring(0, 500);
+      this.isReportModalOpen = true;
+      this.reportReason = '';
+  }
+
+  closeReportModal() {
+      this.isReportModalOpen = false;
+      this.reportReason = '';
+  }
+
+  submitReport() {
+      if (this.reportReason && this.reportReason.trim()) {
           this.reportService.submitReport({
-              reason: trimmedReason,
+              reason: this.reportReason.trim(),
               reportedPostId: this.post.id
           }).subscribe({
-              next: () => this.toastService.show('Report submitted', 'success'),
+              next: () => {
+                  this.toastService.show('Report submitted', 'success');
+                  this.closeReportModal();
+              },
               error: () => this.toastService.show('Failed to submit report', 'error')
           });
-      } else if (reason !== null) {
-          this.toastService.show('Report reason cannot be empty', 'warning');
       }
   }
 
