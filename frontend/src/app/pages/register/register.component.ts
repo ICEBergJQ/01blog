@@ -18,17 +18,18 @@ import { ToastService } from '../../services/toast.service';
             <form (ngSubmit)="onSubmit()">
               <div class="mb-3">
                 <label for="username" class="form-label">Username</label>
-                <input type="text" class="form-control" id="username" [(ngModel)]="user.username" name="username" required maxlength="50" placeholder="Max 50 characters">
+                <input type="text" class="form-control" id="username" [(ngModel)]="user.username" name="username" required minlength="3" maxlength="50" placeholder="3-50 characters">
+                <div *ngIf="user.username.length > 0 && user.username.length < 3" class="text-danger small mt-1">Username must be at least 3 characters.</div>
               </div>
               <div class="mb-3">
                 <label for="email" class="form-label">Email</label>
-                <input type="email" class="form-control" id="email" [(ngModel)]="user.email" name="email" required maxlength="100" #email="ngModel" [class.is-invalid]="email.invalid && email.touched">
-                <div class="invalid-feedback">Please enter a valid email address.</div>
+                <input type="email" class="form-control" id="email" [(ngModel)]="user.email" name="email" required minlength="5" maxlength="100" placeholder="Max 100 characters" #email="ngModel" [class.is-invalid]="email.invalid && email.touched">
+                <div class="invalid-feedback">Please enter a valid email address (min 5 chars).</div>
               </div>
               <div class="mb-3">
                 <label for="password" class="form-label">Password</label>
-                <input type="password" class="form-control" id="password" [(ngModel)]="user.password" name="password" required maxlength="100" pattern="^(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z]).{8,}$" #password="ngModel" [class.is-invalid]="password.invalid && password.touched">
-                <div class="invalid-feedback">Password must be at least 8 characters long, with 1 uppercase, 1 lowercase, and 1 number.</div>
+                <input type="password" class="form-control" id="password" [(ngModel)]="user.password" name="password" required minlength="8" maxlength="64" placeholder="8-64 characters" pattern="^(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z]).{8,}$" #password="ngModel" [class.is-invalid]="password.invalid && password.touched">
+                <div class="invalid-feedback">Password must be 8-64 characters long, with 1 uppercase, 1 lowercase, and 1 number.</div>
               </div>
               <div class="mb-3">
                 <label for="bio" class="form-label">Bio (Optional)</label>
