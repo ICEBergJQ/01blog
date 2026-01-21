@@ -37,8 +37,16 @@ The project follows a modern **Fullstack** architecture separating concerns betw
 *   **File Upload & Deletion**:
     *   `FileUploadController` receives `MultipartFile`.
     *   **Security**: Uploads are restricted to **authenticated users only**.
-    *   **Validation**: Strictly checks MIME types (images/videos only).
-    *   **File Deletion**: A new `FileService` is introduced to handle file deletions. When a post is deleted or a user changes their profile picture, the old file is deleted from the server, preventing orphaned files. The default avatar is never deleted.
+    *   **Secure Content Detection**: Instead of trusting file extensions, we use **Apache Tika** to inspect the file's "magic numbers" (bytes) to determine the true MIME type (e.g., preventing a `.exe` renamed to `.png`).
+    *   **Validation**: 
+        *   Strictly checks MIME types (supporting Images: JPG, PNG, GIF, WEBP, BMP, TIFF, HEIC, ICO; Videos: MP4, WEBM, MKV, AVI, MPEG, etc.).
+        *   **Granular Size Limits**: 
+            *   **Profile Pictures**: Max 10MB.
+            *   **Post Images**: Max 20MB.
+            *   **Post Videos**: Max 100MB.
+    *   **Optimization**: Profile pictures are automatically detected and **resized to 400px width** on the server to improve performance and prevent "oversized image" warnings in the frontend.
+    *   **File Deletion**: A new `FileService` is introduced to handle file deletions. When a post is deleted or a user changes their profile picture, the old file is safely removed from disk.
+
 *   **Post Visibility**:
     *   Posts have a `hidden` boolean.
     *   Admins can see everything.
@@ -63,6 +71,13 @@ The project follows a modern **Fullstack** architecture separating concerns betw
 *   **Styles**: We use a **"Modern Dojo"** aesthetic.
     *   Colors: Steel Blue (`#4A6D85`), Off-Black (`#0F0F0F`), Pure White.
     *   Grid: 3-Column Layout (Sidebar / Feed / Info).
+*   **Responsive Design**:
+    *   **Navigation**: The notification bell intelligently moves based on screen size (next to the toggler on Mobile for easy access, inside the menu next to the profile on Desktop for a cleaner layout).
+    *   **Profile Header**: Adapts from a row layout (Desktop) to a stacked/centered column layout (Mobile).
+*   **Validation Feedback**:
+    *   **Client-Side Checks**: File sizes are checked in the browser before upload to prevent server rejections (CORS/Payload Too Large errors).
+    *   **Character Limits**: Visual counters and strict limits on inputs (e.g., 100 chars for reports, 2000 for posts).
+*   **Reporting System**: Replaced native browser prompts with a custom Bootstrap Modal for a better user experience.
 *   **Optimistic UI**: When you follow a user, the button toggles *immediately* (and counter updates) while the API call happens in the background.
 *   **Cache Busting**: Profile pictures use a query param (`?t=...`) to force the browser to reload the image when it changes.
 *   **Deferred Upload**: Media files are not uploaded immediately upon selection. They are uploaded only when the user publishes the post, preventing orphaned files on the server.
