@@ -82,6 +82,17 @@ public class AdminService {
         userRepository.save(user);
     }
 
+    public void deleteUser(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        
+        if (user.getRole().name().equals("ADMIN")) {
+            throw new RuntimeException("You cannot delete an admin");
+        }
+        
+        userRepository.delete(user);
+    }
+
     public void setPostVisibility(Long postId, boolean hidden) {
         com.example.blog.model.Post post = postRepository.findById(postId)
                 .orElseThrow(() -> new RuntimeException("Post not found"));

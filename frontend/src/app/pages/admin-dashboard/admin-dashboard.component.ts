@@ -118,6 +118,7 @@ import { ToastService } from '../../services/toast.service';
                             <td>
                                 <button *ngIf="user.enabled" class="btn btn-sm btn-danger me-2" (click)="banUser(user)" [disabled]="user.role === 'ADMIN'">Ban</button>
                                 <button *ngIf="!user.enabled" class="btn btn-sm btn-success me-2" (click)="unbanUser(user)">Unban</button>
+                                <button class="btn btn-sm btn-outline-danger" (click)="deleteUser(user)" [disabled]="user.role === 'ADMIN'">Delete</button>
                             </td>
                         </tr>
                     </tbody>
@@ -293,6 +294,17 @@ export class AdminDashboardComponent implements OnInit {
               this.toastService.show('User unbanned', 'success');
           },
           error: () => this.toastService.show('Failed to unban user', 'error')
+      });
+  }
+
+  deleteUser(user: User) {
+      if (!confirm(`Are you sure you want to DELETE ${user.username}? This cannot be undone and will delete all their data.`)) return;
+      this.adminService.deleteUser(user.id).subscribe({
+          next: () => {
+              this.toastService.show('User deleted', 'warning');
+              this.loadUsers();
+          },
+          error: (err) => this.toastService.show(err.error?.message || 'Failed to delete user', 'error')
       });
   }
 

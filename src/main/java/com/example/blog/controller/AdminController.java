@@ -43,6 +43,12 @@ public class AdminController {
         return ResponseEntity.ok().build();
     }
 
+    @DeleteMapping("/users/{userId}")
+    public ResponseEntity<Void> deleteUser(@PathVariable Long userId) {
+        adminService.deleteUser(userId);
+        return ResponseEntity.ok().build();
+    }
+
     @PostMapping("/posts/{postId}/hide")
     public ResponseEntity<Void> hidePost(@PathVariable Long postId) {
         adminService.setPostVisibility(postId, true);
