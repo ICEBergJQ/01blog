@@ -23,8 +23,8 @@ import { ToastService } from '../../services/toast.service';
               </div>
               <div class="mb-3">
                 <label for="email" class="form-label">Email</label>
-                <input type="email" class="form-control" id="email" [(ngModel)]="user.email" name="email" required minlength="5" maxlength="100" placeholder="Max 100 characters" #email="ngModel" [class.is-invalid]="email.invalid && email.touched">
-                <div class="invalid-feedback">Please enter a valid email address (min 5 chars).</div>
+                <input type="email" class="form-control" id="email" [(ngModel)]="user.email" name="email" required minlength="5" maxlength="100" placeholder="Max 100 characters" pattern="^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$" #email="ngModel" [class.is-invalid]="email.invalid && email.touched">
+                <div class="invalid-feedback">Please enter a valid email address (e.g. user@example.com).</div>
               </div>
               <div class="mb-3">
                 <label for="password" class="form-label">Password</label>

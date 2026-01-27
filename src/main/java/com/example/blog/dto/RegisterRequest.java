@@ -18,6 +18,10 @@ public class RegisterRequest {
     private String username;
 
     @Email(message = "Invalid email format")
+    @jakarta.validation.constraints.Pattern(
+        regexp = "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$", 
+        message = "Please provide a valid email address with a domain (e.g. .com)"
+    )
     @NotBlank(message = "Email is required")
     @Size(max = 100, message = "Email cannot exceed 100 characters")
     private String email;

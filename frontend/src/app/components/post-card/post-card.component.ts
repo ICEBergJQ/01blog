@@ -286,11 +286,11 @@ export class PostCardComponent implements OnInit {
   }
 
   unhidePost() {
-      if(!confirm('Unhide this post?')) return;
+      if(!confirm('Are you sure you want to unhide this post?')) return;
       this.adminService.unhidePost(this.post.id).subscribe({
           next: () => {
               this.post.hidden = false;
-              this.toastService.show('Post visible', 'success');
+              this.toastService.show('Post visible now', 'success');
           },
           error: () => this.toastService.show('Failed to unhide post', 'error')
       });
