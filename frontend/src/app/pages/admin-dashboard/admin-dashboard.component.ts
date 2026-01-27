@@ -28,7 +28,14 @@ import { ToastService } from '../../services/toast.service';
 
         <!-- Reports Tab -->
         <div *ngIf="activeTab === 'reports'">
-            <h4>Reports</h4>
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h4>{{ showResolved ? 'Resolved Reports' : 'Pending Reports' }}</h4>
+                <div class="btn-group">
+                    <button class="btn btn-sm" [class.btn-primary]="!showResolved" [class.btn-outline-primary]="showResolved" (click)="toggleReportView(false)">Pending</button>
+                    <button class="btn btn-sm" [class.btn-primary]="showResolved" [class.btn-outline-primary]="!showResolved" (click)="toggleReportView(true)">Resolved</button>
+                </div>
+            </div>
+
             <div class="table-responsive">
                 <table class="table table-striped table-hover">
                     <thead>
@@ -55,8 +62,11 @@ import { ToastService } from '../../services/toast.service';
                             <td>{{ report.timestamp | date:'short' }}</td>
                             <td style="min-width: 200px;">
                                 <div class="d-flex flex-wrap gap-2">
-                                    <button class="btn btn-sm btn-danger" (click)="banUserFromReport(report)" *ngIf="report.reportedUserId" title="Ban User">
+                                    <button class="btn btn-sm btn-danger" (click)="toggleBanUserFromReport(report)" *ngIf="report.reportedUserId && report.reportedUserEnabled" title="Ban User">
                                         <i class="bi bi-person-x"></i> Ban
+                                    </button>
+                                    <button class="btn btn-sm btn-success" (click)="toggleBanUserFromReport(report)" *ngIf="report.reportedUserId && !report.reportedUserEnabled" title="Unban User">
+                                        <i class="bi bi-person-check"></i> Unban
                                     </button>
                                     
                                     <ng-container *ngIf="report.reportedPostId">
@@ -66,12 +76,12 @@ import { ToastService } from '../../services/toast.service';
                                         <button class="btn btn-sm btn-warning text-white" (click)="toggleHidePost(report)" *ngIf="report.postHidden" title="Unhide Post">
                                             <i class="bi bi-eye"></i> Unhide
                                         </button>
-                                        <button class="btn btn-sm btn-outline-danger" (click)="deletePost(report.reportedPostId!)" title="Delete Post">
+                                        <button class="btn btn-sm btn-outline-danger" (click)="deletePostFromReport(report)" title="Delete Post">
                                             <i class="bi bi-trash"></i>
                                         </button>
                                     </ng-container>
 
-                                    <button class="btn btn-sm btn-light border" (click)="dismiss(report.id)" title="Dismiss Report">
+                                    <button *ngIf="!showResolved" class="btn btn-sm btn-light border" (click)="dismiss(report.id)" title="Dismiss / Ignore">
                                         <i class="bi bi-x-circle"></i> Dismiss
                                     </button>
                                 </div>
@@ -80,7 +90,7 @@ import { ToastService } from '../../services/toast.service';
                     </tbody>
                 </table>
             </div>
-            <div *ngIf="reports.length === 0" class="alert alert-info">No pending reports.</div>
+            <div *ngIf="reports.length === 0" class="alert alert-info">No {{ showResolved ? 'resolved' : 'pending' }} reports.</div>
             
             <div class="d-flex justify-content-between align-items-center mt-3" *ngIf="totalPagesReports > 1">
                 <button class="btn btn-sm btn-outline-secondary" (click)="changePageReports(-1)" [disabled]="pageReports === 0">Previous</button>
@@ -205,6 +215,8 @@ export class AdminDashboardComponent implements OnInit {
   hasMorePosts = true;
   isLoadingPosts = false;
 
+  showResolved = false;
+
   constructor(
       private adminService: AdminService,
       private postService: PostService,
@@ -221,10 +233,16 @@ export class AdminDashboardComponent implements OnInit {
   }
 
   loadReports() {
-      this.adminService.getAllReports(this.pageReports, this.pageSize).subscribe(res => {
+      // Note: simplified cursor handling for reports
+      this.adminService.getAllReports(null, this.pageSize, this.showResolved).subscribe(res => {
           this.reports = res.content;
-          this.totalPagesReports = res.totalPages;
+          this.totalPagesReports = 1; // Simplify since cursor logic is complex for pages
       });
+  }
+
+  toggleReportView(resolved: boolean) {
+      this.showResolved = resolved;
+      this.loadReports();
   }
 
   loadUsers() {
@@ -251,28 +269,30 @@ export class AdminDashboardComponent implements OnInit {
       });
   }
 
-  changePageReports(delta: number) {
-      this.pageReports += delta;
-      this.loadReports();
-  }
-
   changePageUsers(delta: number) {
       this.pageUsers += delta;
       this.loadUsers();
   }
 
-  banUserFromReport(report: ReportResponse) {
-      if (!confirm(`Are you sure you want to BAN ${report.reportedUsername}?`)) return;
-      if (report.reportedUserId) {
-          this.adminService.banUser(report.reportedUserId).subscribe({
-              next: () => {
-                  this.toastService.show('User banned', 'success');
-                  this.reports = this.reports.filter(r => r.id !== report.id);
-                  this.loadUsers();
-              },
-              error: (err) => this.toastService.show(err.error?.message || 'Failed to ban user', 'error')
-          });
-      }
+  toggleBanUserFromReport(report: ReportResponse) {
+      if (!report.reportedUserId) return;
+      const isBanning = report.reportedUserEnabled !== false; // Default to true (enabled) if null
+      
+      const action = isBanning ? 'BAN' : 'UNBAN';
+      if (!confirm(`Are you sure you want to ${action} ${report.reportedUsername}?`)) return;
+
+      const apiCall = isBanning 
+        ? this.adminService.banUser(report.reportedUserId)
+        : this.adminService.unbanUser(report.reportedUserId);
+
+      apiCall.subscribe({
+          next: () => {
+              report.reportedUserEnabled = !isBanning; // Toggle state immediately
+              this.toastService.show(`User ${isBanning ? 'banned' : 'unbanned'}`, 'success');
+              this.autoResolve(report.id);
+          },
+          error: (err) => this.toastService.show(err.error?.message || 'Action failed', 'error')
+      });
   }
 
   banUser(user: User) {
@@ -319,6 +339,19 @@ export class AdminDashboardComponent implements OnInit {
       });
   }
 
+  deletePostFromReport(report: ReportResponse) {
+      if (!confirm('Delete this post?')) return;
+      if (!report.reportedPostId) return;
+
+      this.postService.deletePost(report.reportedPostId).subscribe({
+          next: () => {
+              this.toastService.show('Post deleted', 'warning');
+              this.autoResolve(report.id);
+          },
+          error: () => this.toastService.show('Failed to delete post', 'error')
+      });
+  }
+
   deletePostFromList(postId: number) {
       if (!confirm('Delete this post?')) return;
       this.postService.deletePost(postId).subscribe({
@@ -334,15 +367,32 @@ export class AdminDashboardComponent implements OnInit {
       this.adminService.dismissReport(id).subscribe({
           next: () => {
               this.reports = this.reports.filter(r => r.id !== id);
-              this.toastService.show('Report dismissed', 'info');
+              this.toastService.show('Report resolved', 'info');
           },
-          error: () => this.toastService.show('Failed to dismiss report', 'error')
+          error: () => this.toastService.show('Failed to resolve report', 'error')
+      });
+  }
+
+  autoResolve(reportId: number) {
+      // If we are in "Pending" view, resolve it so it disappears from the list.
+      // If we are in "Resolved" view, no need to call API again (it's already resolved), 
+      // just UI update happened.
+      if (this.showResolved) return;
+
+      this.adminService.dismissReport(reportId).subscribe({
+          next: () => {
+              this.reports = this.reports.filter(r => r.id !== reportId);
+          }
+          // Silent fail ok for auto-resolve
       });
   }
 
   toggleHidePost(report: ReportResponse) {
       if (!report.reportedPostId) return;
       
+      const action = report.postHidden ? 'unhide' : 'hide';
+      if (!confirm(`Are you sure you want to ${action} this post?`)) return;
+
       const action$ = report.postHidden 
         ? this.adminService.unhidePost(report.reportedPostId) 
         : this.adminService.hidePost(report.reportedPostId);
@@ -350,13 +400,17 @@ export class AdminDashboardComponent implements OnInit {
       action$.subscribe({
           next: () => {
               report.postHidden = !report.postHidden;
-              this.toastService.show(report.postHidden ? 'Post hidden' : 'Post visible', 'success');
+              this.toastService.show(report.postHidden ? 'Post hidden successfully' : 'Post visible now', 'success');
+              this.autoResolve(report.id);
           },
           error: () => this.toastService.show('Action failed', 'error')
       });
   }
 
   toggleHidePostFromList(post: Post) {
+      const action = post.hidden ? 'unhide' : 'hide';
+      if (!confirm(`Are you sure you want to ${action} this post?`)) return;
+
       const action$ = post.hidden 
         ? this.adminService.unhidePost(post.id) 
         : this.adminService.hidePost(post.id);
@@ -364,7 +418,7 @@ export class AdminDashboardComponent implements OnInit {
       action$.subscribe({
           next: () => {
               post.hidden = !post.hidden;
-              this.toastService.show(post.hidden ? 'Post hidden' : 'Post visible', 'success');
+              this.toastService.show(post.hidden ? 'Post hidden successfully' : 'Post visible now', 'success');
           },
           error: () => this.toastService.show('Action failed', 'error')
       });

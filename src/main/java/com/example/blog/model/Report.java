@@ -23,6 +23,10 @@ public class Report {
     @Column(nullable = false, length = 500)
     private String reason;
 
+    @Column(nullable = false)
+    @Builder.Default
+    private boolean resolved = false;
+
     private LocalDateTime timestamp;
 
     @ManyToOne(fetch = FetchType.LAZY)

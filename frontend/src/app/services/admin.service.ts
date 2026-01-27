@@ -12,6 +12,7 @@ export interface ReportResponse {
     reportedUserId?: number;
     reportedPostId?: number;
     postHidden?: boolean;
+    reportedUserEnabled?: boolean;
 }
 
 export interface PageResponse<T> {
@@ -31,8 +32,10 @@ export class AdminService {
 
   constructor(private http: HttpClient) {}
 
-  getAllReports(cursor: number | null = null, size: number = 10): Observable<any> {
-    const url = cursor ? `${this.apiUrl}/reports?cursor=${cursor}&size=${size}` : `${this.apiUrl}/reports?size=${size}`;
+  getAllReports(cursor: number | null = null, size: number = 10, resolved: boolean = false): Observable<any> {
+    const url = cursor 
+        ? `${this.apiUrl}/reports?cursor=${cursor}&size=${size}&resolved=${resolved}` 
+        : `${this.apiUrl}/reports?size=${size}&resolved=${resolved}`;
     return this.http.get<any>(url);
   }
 

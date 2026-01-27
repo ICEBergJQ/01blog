@@ -10,6 +10,6 @@ import java.util.List;
 
 @Repository
 public interface ReportRepository extends JpaRepository<Report, Long> {
-    @Query("SELECT r FROM Report r WHERE (:cursor IS NULL OR r.id < :cursor) ORDER BY r.id DESC")
-    List<Report> findAllReportsCursor(Long cursor, Pageable pageable);
+    @Query("SELECT r FROM Report r WHERE (:cursor IS NULL OR r.id < :cursor) AND r.resolved = :resolved ORDER BY r.id DESC")
+    List<Report> findAllReportsCursor(Long cursor, boolean resolved, Pageable pageable);
 }

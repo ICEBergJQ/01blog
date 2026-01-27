@@ -20,4 +20,5 @@ public class ReportResponse {
     private Long reportedUserId;
     private Long reportedPostId;
     private boolean postHidden;
+    private Boolean reportedUserEnabled;
 }

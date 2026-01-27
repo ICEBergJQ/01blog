@@ -45,9 +45,9 @@ public class AdminService {
         return new PageResponse<>(content, usersPage.getNumber(), usersPage.getSize(), usersPage.getTotalElements(), usersPage.getTotalPages(), usersPage.isLast());
     }
 
-    public CursorResponse<ReportResponse> getAllReports(Long cursor, int size) {
+    public CursorResponse<ReportResponse> getAllReports(Long cursor, int size, boolean resolved) {
         org.springframework.data.domain.Pageable pageable = PageRequest.of(0, size + 1);
-        List<Report> reports = reportRepository.findAllReportsCursor(cursor, pageable);
+        List<Report> reports = reportRepository.findAllReportsCursor(cursor, resolved, pageable);
         
         boolean hasMore = reports.size() > size;
         if (hasMore) {
@@ -101,19 +101,25 @@ public class AdminService {
     }
 
     public void dismissReport(Long reportId) {
-        reportRepository.deleteById(reportId);
+        Report report = reportRepository.findById(reportId)
+                .orElseThrow(() -> new RuntimeException("Report not found"));
+        report.setResolved(true);
+        reportRepository.save(report);
     }
 
     private ReportResponse mapToResponse(Report report) {
         String reportedUsername = null;
         Long reportedUserId = null;
+        Boolean reportedUserEnabled = null;
 
         if (report.getReportedUser() != null) {
             reportedUsername = report.getReportedUser().getUsername();
             reportedUserId = report.getReportedUser().getId();
+            reportedUserEnabled = report.getReportedUser().isEnabled();
         } else if (report.getReportedPost() != null) {
             reportedUsername = report.getReportedPost().getUser().getUsername();
             reportedUserId = report.getReportedPost().getUser().getId();
+            reportedUserEnabled = report.getReportedPost().getUser().isEnabled();
         }
 
         return ReportResponse.builder()
@@ -125,6 +131,7 @@ public class AdminService {
                 .reportedUserId(reportedUserId)
                 .reportedPostId(report.getReportedPost() != null ? report.getReportedPost().getId() : null)
                 .postHidden(report.getReportedPost() != null && report.getReportedPost().isHidden())
+                .reportedUserEnabled(reportedUserEnabled)
                 .build();
     }
 }

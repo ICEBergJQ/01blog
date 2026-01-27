@@ -18,9 +18,10 @@ public class AdminController {
     @GetMapping("/reports")
     public ResponseEntity<CursorResponse<ReportResponse>> getAllReports(
             @RequestParam(required = false) Long cursor,
-            @RequestParam(defaultValue = "10") int size
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "false") boolean resolved
     ) {
-        return ResponseEntity.ok(adminService.getAllReports(cursor, size));
+        return ResponseEntity.ok(adminService.getAllReports(cursor, size, resolved));
     }
 
     @GetMapping("/users")
