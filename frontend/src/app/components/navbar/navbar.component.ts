@@ -163,13 +163,13 @@ import { ToastService } from '../../services/toast.service';
             <ng-container *ngIf="isBrowser && (authService.currentUser$ | async); else guestLinks">
               <li class="nav-item me-lg-3 me-0 mb-2 mb-lg-0" *ngIf="currentUser">
                  <form class="d-flex position-relative align-items-center" (submit)="search()">
-                    <div class="input-group input-group-sm">
-                        <span class="input-group-text bg-white border-end-0 rounded-start-pill text-muted border-secondary">
+                    <div class="input-group input-group-sm glassy-search">
+                        <span class="input-group-text border-end-0 rounded-start-pill text-white" style="background: rgba(255, 255, 255, 0.15); border: 1px solid rgba(255, 255, 255, 0.2);">
                             <i class="bi bi-search"></i>
                         </span>
-                        <input class="form-control border-start-0 rounded-end-pill bg-white shadow-none border-secondary" type="search" placeholder="Search..." aria-label="Search" [(ngModel)]="searchQuery" name="searchQuery" (input)="onSearchInput()" autocomplete="off" style="width: 180px; transition: width 0.3s ease;">
+                        <input class="form-control border-start-0 rounded-end-pill shadow-none text-white placeholder-white" type="search" placeholder="Search..." aria-label="Search" [(ngModel)]="searchQuery" name="searchQuery" (input)="onSearchInput()" autocomplete="off" style="width: 180px; transition: width 0.3s ease; background: rgba(255, 255, 255, 0.15); border: 1px solid rgba(255, 255, 255, 0.2);">
                     </div>
-                    <div class="dropdown-menu show shadow-lg border-0 rounded-3 mt-2" *ngIf="searchResults.length > 0" style="position: absolute; top: 100%; right: 0; min-width: 250px; z-index: 1050;">
+                    <div class="dropdown-menu show shadow-lg border-0 rounded-3 mt-2" *ngIf="searchResults.length > 0" style="position: absolute; top: 100%; right: 0; min-width: 250px; z-index: 1050; background: rgba(255, 255, 255, 0.9); backdrop-filter: blur(10px);">
                         <button class="dropdown-item d-flex align-items-center" *ngFor="let user of searchResults" (click)="goToUserProfile(user.id)">
                             <img [src]="user.profilePictureUrl ? 'http://localhost:8080' + user.profilePictureUrl : 'assets/default-avatar.png'" class="rounded-circle me-2" style="width: 24px; height: 24px; object-fit: cover;">
                             <span>{{ user.username }}</span>
