@@ -155,7 +155,7 @@ import { Router, RouterModule } from '@angular/router';
     <div class="modal fade show d-block" tabindex="-1" *ngIf="fullImageUrl" style="background: rgba(0,0,0,0.9); z-index: 3000;">
         <div class="modal-dialog modal-fullscreen m-0" (click)="closeFullImage()">
             <div class="modal-content bg-transparent border-0 h-100 justify-content-center align-items-center position-relative">
-                <button class="btn btn-close btn-close-white position-absolute top-0 end-0 m-4 z-3" (click)="closeFullImage()"></button>
+                <button class="btn-close btn-close-white position-absolute top-0 end-0 m-4 z-3" (click)="closeFullImage()"></button>
                 <img [src]="fullImageUrl" class="img-fluid" style="max-height: 100vh; max-width: 100vw; object-fit: contain;" (click)="$event.stopPropagation()">
             </div>
         </div>
