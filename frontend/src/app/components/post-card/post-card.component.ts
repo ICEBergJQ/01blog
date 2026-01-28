@@ -68,9 +68,33 @@ import { Router, RouterModule } from '@angular/router';
       <div class="card-body" [class.opacity-50]="post.hidden">
         <div *ngIf="!isEditing">
             <p class="card-text" style="white-space: pre-wrap;">{{ displayContent }}<a href="#" *ngIf="shouldShowSeeMore" (click)="$event.preventDefault(); isExpanded = !isExpanded" class="text-decoration-none ms-1">{{ isExpanded ? 'See less' : 'See more' }}</a></p>
-            <div *ngIf="post.mediaUrl" class="mb-3 text-center bg-light rounded overflow-hidden">
-                <img [src]="post.mediaUrl" class="img-fluid" alt="Post media" *ngIf="post.mediaType === 'IMAGE'" style="max-height: 450px; object-fit: contain;">
-                <video [src]="post.mediaUrl" controls class="img-fluid" *ngIf="post.mediaType === 'VIDEO'" style="max-height: 450px; width: 100%;"></video>
+            
+            <!-- Media Display -->
+            <div *ngIf="post.mediaUrl" class="mb-3 rounded overflow-hidden bg-light border">
+                <!-- Image: Click to Expand -->
+                <div *ngIf="post.mediaType === 'IMAGE'" 
+                     class="position-relative cursor-pointer" 
+                     style="max-height: 500px; overflow: hidden;"
+                     (click)="openFullImage(post.mediaUrl)">
+                    
+                    <img [src]="post.mediaUrl" 
+                         class="w-100" 
+                         alt="Post media" 
+                         style="object-fit: cover; object-position: top; min-height: 200px;">
+                    
+                    <!-- Hover/Overlay Hint -->
+                    <div class="position-absolute bottom-0 start-0 end-0 py-2 text-center text-white" 
+                         style="background: linear-gradient(to top, rgba(0,0,0,0.6), transparent);">
+                        <small><i class="bi bi-arrows-fullscreen me-1"></i> Click to expand</small>
+                    </div>
+                </div>
+
+                <!-- Video: Default controls -->
+                <video *ngIf="post.mediaType === 'VIDEO'" 
+                       [src]="post.mediaUrl" 
+                       controls 
+                       class="w-100" 
+                       style="max-height: 500px; object-fit: contain; background: #000;"></video>
             </div>
         </div>
         <div *ngIf="isEditing">
@@ -127,6 +151,16 @@ import { Router, RouterModule } from '@angular/router';
       </div>
     </div>
 
+    <!-- Image Lightbox Modal -->
+    <div class="modal fade show d-block" tabindex="-1" *ngIf="fullImageUrl" style="background: rgba(0,0,0,0.9); z-index: 3000;">
+        <div class="modal-dialog modal-fullscreen m-0" (click)="closeFullImage()">
+            <div class="modal-content bg-transparent border-0 h-100 justify-content-center align-items-center position-relative">
+                <button class="btn btn-close btn-close-white position-absolute top-0 end-0 m-4 z-3" (click)="closeFullImage()"></button>
+                <img [src]="fullImageUrl" class="img-fluid" style="max-height: 100vh; max-width: 100vw; object-fit: contain;" (click)="$event.stopPropagation()">
+            </div>
+        </div>
+    </div>
+
     <!-- Report Modal moved outside card -->
     <div *ngIf="isReportModalOpen">
         <div class="modal-backdrop fade show" style="background: rgba(0,0,0,0.5); z-index: 2000;"></div>
@@ -177,6 +211,9 @@ export class PostCardComponent implements OnInit {
   isReportModalOpen = false;
   reportReason = '';
 
+  // Image Lightbox
+  fullImageUrl: string | null = null;
+
   constructor(
       private interactionService: InteractionService,
       private postService: PostService,
@@ -184,6 +221,20 @@ export class PostCardComponent implements OnInit {
       private adminService: AdminService,
       private toastService: ToastService
   ) {}
+
+  openFullImage(url: string) {
+      this.fullImageUrl = url;
+      if (typeof document !== 'undefined') {
+          document.body.style.overflow = 'hidden';
+      }
+  }
+
+  closeFullImage() {
+      this.fullImageUrl = null;
+      if (typeof document !== 'undefined') {
+          document.body.style.overflow = '';
+      }
+  }
 
   get shouldShowSeeMore(): boolean {
       if (!this.post.content) return false;
