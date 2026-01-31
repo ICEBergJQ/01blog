@@ -46,7 +46,7 @@ public class PostController {
     @PutMapping("/{id}")
     public ResponseEntity<PostResponse> updatePost(
             @PathVariable Long id,
-            @RequestBody PostRequest request,
+            @jakarta.validation.Valid @RequestBody PostRequest request,
             Authentication authentication
     ) {
         return ResponseEntity.ok(postService.updatePost(id, request, authentication.getName()));
