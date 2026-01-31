@@ -25,8 +25,8 @@ public class AuthService {
 
     public AuthenticationResponse register(RegisterRequest request) {
         var user = User.builder()
-                .username(request.getUsername())
-                .email(request.getEmail())
+                .username(request.getUsername().toLowerCase())
+                .email(request.getEmail().toLowerCase())
                 .password(passwordEncoder.encode(request.getPassword()))
                 .role(Role.USER)
                 .bio(request.getBio())
@@ -40,13 +40,14 @@ public class AuthService {
     }
 
     public AuthenticationResponse authenticate(AuthenticationRequest request) {
+        String lowerCaseUsername = request.getUsername().toLowerCase();
         authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(
-                        request.getUsername(),
+                        lowerCaseUsername,
                         request.getPassword()
                 )
         );
-        var user = repository.findByUsername(request.getUsername())
+        var user = repository.findByUsername(lowerCaseUsername)
                 .orElseThrow();
         var jwtToken = jwtService.generateToken(user);
         return AuthenticationResponse.builder()
