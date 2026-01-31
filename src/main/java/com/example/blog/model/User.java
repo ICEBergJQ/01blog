@@ -70,6 +70,9 @@ public class User implements UserDetails {
     @OneToMany(mappedBy = "reportedUser", cascade = CascadeType.ALL)
     private List<Report> receivedReports;
 
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Notification> notifications;
+
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
         return List.of(new SimpleGrantedAuthority("ROLE_" + role.name()));
