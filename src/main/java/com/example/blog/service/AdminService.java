@@ -90,6 +90,7 @@ public class AdminService {
             throw new RuntimeException("You cannot delete an admin");
         }
         
+        userRepository.deleteUserSubscriptions(userId);
         userRepository.delete(user);
     }
 
