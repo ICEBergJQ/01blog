@@ -158,7 +158,7 @@ export class ProfileComponent implements OnInit {
         this.route.paramMap.subscribe(params => {
             const paramId = params.get('id');
             const id = Number(paramId);
-            if (!isNaN(id) && id > 0) {
+            if (!isNaN(id) && id > 0 && id < Number.MAX_SAFE_INTEGER) {
                 this.loadProfile(id);
             } else {
                 this.router.navigate(['/not-found']);
@@ -173,20 +173,21 @@ export class ProfileComponent implements OnInit {
           this.user = user;
           this.updateLocalProfileImageUrl();
           this.checkFollowStatus(id);
+          
+          // Only load posts if user exists
+          this.posts = [];
+          this.nextCursor = null;
+          this.hasMore = true;
+          this.loadMorePosts(id);
         },
         error: (err) => {
-            if (err.status === 404) {
+            if (err.status === 404 || err.status === 400) {
                 this.router.navigate(['/not-found']);
             } else {
                 this.toastService.show('Failed to load profile. Please try again.', 'error');
             }
         }
       });
-      // Reset posts
-      this.posts = [];
-      this.nextCursor = null;
-      this.hasMore = true;
-      this.loadMorePosts(id);
   }
 
   loadMorePosts(userId: number) {

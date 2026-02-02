@@ -40,6 +40,10 @@ public class ReportService {
         if (request.getReportedPostId() != null) {
             Post reportedPost = postRepository.findById(request.getReportedPostId())
                     .orElseThrow(() -> new RuntimeException("Reported post not found"));
+            
+            if (reportedPost.isHidden()) {
+                throw new RuntimeException("You cannot report a hidden post");
+            }
             reportBuilder.reportedPost(reportedPost);
         }
 

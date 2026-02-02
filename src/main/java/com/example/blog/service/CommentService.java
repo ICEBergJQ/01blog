@@ -59,11 +59,19 @@ public class CommentService {
     public void deleteComment(Long commentId, String username) {
         Comment comment = commentRepository.findById(commentId)
                 .orElseThrow(() -> new RuntimeException("Comment not found"));
+        
+        User requester = userRepository.findByUsername(username)
+                .orElseThrow(() -> new UsernameNotFoundException("User not found"));
+        boolean isAdmin = requester.getRole().name().equals("ADMIN");
 
-        if (!comment.getUser().getUsername().equals(username)) {
-             // Check if post owner or admin? For now just comment owner.
+        if (!comment.getUser().getUsername().equals(username) && !isAdmin) {
             throw new RuntimeException("You can only delete your own comments");
         }
+        
+        if (comment.getPost().isHidden() && !isAdmin) {
+            throw new RuntimeException("You cannot delete comments on a hidden post");
+        }
+        
         commentRepository.delete(comment);
     }
 
