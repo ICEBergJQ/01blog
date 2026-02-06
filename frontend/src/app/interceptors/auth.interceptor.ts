@@ -26,6 +26,11 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
   
   return next(authReq).pipe(
       catchError((error: HttpErrorResponse) => {
+          // Skip global error handling for auth endpoints (let components handle login failures)
+          if (req.url.includes('/api/auth/authenticate') || req.url.includes('/api/auth/register')) {
+              return throwError(() => error);
+          }
+
           if (isPlatformBrowser(platformId)) {
               if (error.status === 401) {
                   // 401 Unauthorized (Expired/Invalid Token) -> Logout
