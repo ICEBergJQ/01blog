@@ -37,7 +37,7 @@ import { ToastService } from '../../services/toast.service';
             </div>
 
             <div class="table-responsive">
-                <table class="table table-striped table-hover">
+                <table class="table table-striped table-hover align-middle text-nowrap">
                     <thead>
                         <tr>
                             <th>ID</th>
@@ -58,31 +58,31 @@ import { ToastService } from '../../services/toast.service';
                                 <span *ngIf="report.reportedPostId" class="badge bg-secondary ms-1">Post Author</span>
                             </td>
                             <td>{{ report.reportedPostId || 'N/A' }}</td>
-                            <td>{{ report.reason }}</td>
+                            <td class="text-truncate" style="max-width: 200px;" title="{{ report.reason }}">{{ report.reason }}</td>
                             <td>{{ report.timestamp | date:'short' }}</td>
-                            <td style="min-width: 200px;">
-                                <div class="d-flex flex-wrap gap-2">
+                            <td>
+                                <div class="d-flex gap-2">
                                     <button class="btn btn-sm btn-danger" (click)="toggleBanUserFromReport(report)" *ngIf="report.reportedUserId && report.reportedUserEnabled" title="Ban User">
-                                        <i class="bi bi-person-x"></i> Ban
+                                        <i class="bi bi-person-x"></i> <span class="d-none d-md-inline ms-1">Ban</span>
                                     </button>
                                     <button class="btn btn-sm btn-success" (click)="toggleBanUserFromReport(report)" *ngIf="report.reportedUserId && !report.reportedUserEnabled" title="Unban User">
-                                        <i class="bi bi-person-check"></i> Unban
+                                        <i class="bi bi-person-check"></i> <span class="d-none d-md-inline ms-1">Unban</span>
                                     </button>
                                     
                                     <ng-container *ngIf="report.reportedPostId">
                                         <button class="btn btn-sm btn-secondary" (click)="toggleHidePost(report)" *ngIf="!report.postHidden" title="Hide Post">
-                                            <i class="bi bi-eye-slash"></i> Hide
+                                            <i class="bi bi-eye-slash"></i> <span class="d-none d-md-inline ms-1">Hide</span>
                                         </button>
                                         <button class="btn btn-sm btn-warning text-white" (click)="toggleHidePost(report)" *ngIf="report.postHidden" title="Unhide Post">
-                                            <i class="bi bi-eye"></i> Unhide
+                                            <i class="bi bi-eye"></i> <span class="d-none d-md-inline ms-1">Unhide</span>
                                         </button>
                                         <button class="btn btn-sm btn-outline-danger" (click)="deletePostFromReport(report)" title="Delete Post">
-                                            <i class="bi bi-trash"></i>
+                                            <i class="bi bi-trash"></i> <span class="d-none d-md-inline ms-1">Delete</span>
                                         </button>
                                     </ng-container>
 
                                     <button *ngIf="!showResolved" class="btn btn-sm btn-light border" (click)="dismiss(report.id)" title="Dismiss / Ignore">
-                                        <i class="bi bi-x-circle"></i> Dismiss
+                                        <i class="bi bi-x-circle"></i> <span class="d-none d-md-inline ms-1">Dismiss</span>
                                     </button>
                                 </div>
                             </td>
@@ -103,7 +103,7 @@ import { ToastService } from '../../services/toast.service';
         <div *ngIf="activeTab === 'users'">
             <h4>All Users</h4>
             <div class="table-responsive">
-                <table class="table table-striped table-hover">
+                <table class="table table-striped table-hover align-middle text-nowrap">
                     <thead>
                         <tr>
                             <th>ID</th>
@@ -126,9 +126,17 @@ import { ToastService } from '../../services/toast.service';
                                 </span>
                             </td>
                             <td>
-                                <button *ngIf="user.enabled" class="btn btn-sm btn-danger me-2" (click)="banUser(user)" [disabled]="user.role === 'ADMIN'">Ban</button>
-                                <button *ngIf="!user.enabled" class="btn btn-sm btn-success me-2" (click)="unbanUser(user)">Unban</button>
-                                <button class="btn btn-sm btn-outline-danger" (click)="deleteUser(user)" [disabled]="user.role === 'ADMIN'">Delete</button>
+                                <div class="d-flex gap-2">
+                                    <button *ngIf="user.enabled" class="btn btn-sm btn-danger" (click)="banUser(user)" [disabled]="user.role === 'ADMIN'" title="Ban User">
+                                        <i class="bi bi-person-x"></i> <span class="d-none d-md-inline ms-1">Ban</span>
+                                    </button>
+                                    <button *ngIf="!user.enabled" class="btn btn-sm btn-success" (click)="unbanUser(user)" title="Unban User">
+                                        <i class="bi bi-person-check"></i> <span class="d-none d-md-inline ms-1">Unban</span>
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-danger" (click)="deleteUser(user)" [disabled]="user.role === 'ADMIN'" title="Delete User">
+                                        <i class="bi bi-trash"></i> <span class="d-none d-md-inline ms-1">Delete</span>
+                                    </button>
+                                </div>
                             </td>
                         </tr>
                     </tbody>
@@ -146,7 +154,7 @@ import { ToastService } from '../../services/toast.service';
         <div *ngIf="activeTab === 'posts'">
             <h4>All Posts</h4>
             <div class="table-responsive">
-                <table class="table table-striped table-hover">
+                <table class="table table-striped table-hover align-middle text-nowrap">
                     <thead>
                         <tr>
                             <th>ID</th>
@@ -161,22 +169,26 @@ import { ToastService } from '../../services/toast.service';
                         <tr *ngFor="let post of allPosts">
                             <td>{{ post.id }}</td>
                             <td>{{ post.username }}</td>
-                            <td>{{ post.content | slice:0:50 }}...</td>
+                            <td class="text-truncate" style="max-width: 200px;" title="{{ post.content }}">
+                                {{ post.content | slice:0:50 }}{{ post.content.length > 50 ? '...' : '' }}
+                            </td>
                             <td>{{ post.timestamp | date:'short' }}</td>
                             <td>
                                 <span class="badge bg-secondary" *ngIf="post.hidden">HIDDEN</span>
                                 <span class="badge bg-success" *ngIf="!post.hidden">VISIBLE</span>
                             </td>
                             <td>
-                                <button class="btn btn-sm btn-secondary me-2" (click)="toggleHidePostFromList(post)" *ngIf="!post.hidden" title="Hide Post">
-                                    <i class="bi bi-eye-slash"></i> Hide
-                                </button>
-                                <button class="btn btn-sm btn-warning me-2 text-white" (click)="toggleHidePostFromList(post)" *ngIf="post.hidden" title="Unhide Post">
-                                    <i class="bi bi-eye"></i> Unhide
-                                </button>
-                                <button class="btn btn-sm btn-outline-danger" (click)="deletePostFromList(post.id)" title="Delete Post">
-                                    <i class="bi bi-trash"></i> Delete
-                                </button>
+                                <div class="d-flex gap-2">
+                                    <button class="btn btn-sm btn-secondary" (click)="toggleHidePostFromList(post)" *ngIf="!post.hidden" title="Hide Post">
+                                        <i class="bi bi-eye-slash"></i> <span class="d-none d-md-inline ms-1">Hide</span>
+                                    </button>
+                                    <button class="btn btn-sm btn-warning text-white" (click)="toggleHidePostFromList(post)" *ngIf="post.hidden" title="Unhide Post">
+                                        <i class="bi bi-eye"></i> <span class="d-none d-md-inline ms-1">Unhide</span>
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-danger" (click)="deletePostFromList(post.id)" title="Delete Post">
+                                        <i class="bi bi-trash"></i> <span class="d-none d-md-inline ms-1">Delete</span>
+                                    </button>
+                                </div>
                             </td>
                         </tr>
                     </tbody>
